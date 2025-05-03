@@ -57,9 +57,9 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
  */
 export const getVerificationResult = async (jobId: string): Promise<JobStatus> => {
   try {
-    // Aufruf der sicheren Supabase Edge Function mit der Job-ID
-    const { data, error } = await supabase.functions.invoke('secure-gemini/job-status', {
-      body: { jobId },
+    // Aufruf der sicheren Supabase Edge Function mit der Job-ID als URL-Parameter
+    // statt im Body (wichtig für GET-Requests)
+    const { data, error } = await supabase.functions.invoke(`secure-gemini/job-status?jobId=${jobId}`, {
       method: 'GET'
     });
     

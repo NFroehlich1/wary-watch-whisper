@@ -78,7 +78,7 @@ serve(async (req) => {
  */
 async function handleJobStatus(req, url) {
   try {
-    // Get jobId from the query parameters
+    // Get jobId from the query parameters instead of request body
     const jobId = url.searchParams.get('jobId');
     
     if (!jobId) {
