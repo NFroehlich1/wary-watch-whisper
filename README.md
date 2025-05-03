@@ -14,7 +14,8 @@
 3. [Architecture](#architecture)
    1. [Frontend](#frontend)
    2. [Backend](#backend)
-   3. [Deployment Status](#deployment)
+   3. [Security](#security)
+   4. [Deployment Status](#deployment)
 4. [Getting Started](#getting-started)  
    1. [Prerequisites](#prerequisites)  
    2. [Installation](#installation)  
@@ -53,7 +54,7 @@ and returns a detailed, transparent assessment of potential threats.
 | **AI** | • Google Gemini‑powered verification<br>• Real‑time threat scores<br>• Human‑readable justifications<br>• Interactive follow‑up Q&A |
 | **Languages** | English, Spanish, French, German, and more |
 | **Results** | • Risk level (Safe / Suspicious / Scam)<br>• Explanation<br>• Detected language<br>• Timestamp<br>• "Ask again" option |
-| **Security** | • Serverless edge functions<br>• API key protection<br>• CORS policies<br>• Error handling |
+| **Security** | • Serverless edge functions<br>• Secure API key management<br>• CORS policies<br>• Error handling |
 
 ---
 
@@ -95,6 +96,16 @@ Server-side operations are handled by:
   * **Google Gemini AI** — Powers the advanced content verification
   * **Web Speech API** — Provides text-to-speech and speech-to-text capabilities
 
+### Security <a name="security"></a>
+
+ScamShield employs a robust security architecture:
+
+* **No API Keys in Client Code** — All sensitive API keys are stored as Supabase Secrets
+* **Edge Function Proxies** — All external API calls are made via secure Supabase Edge Functions
+* **Request Validation** — All incoming data is validated before processing
+* **CORS Protection** — Proper headers prevent unauthorized cross-origin requests
+* **Error Handling** — Failed API calls degrade gracefully without exposing sensitive information
+
 ### Deployment Status <a name="deployment"></a>
 
 | Component | Status | Platform | URL |
@@ -117,7 +128,7 @@ Server-side operations are handled by:
 |------|---------|-------|
 | **Node.js** | ≥ 16.18.0 | Tested on LTS 16 & 18 |
 | **npm** / **pnpm** / **yarn** | latest | Use your preferred package manager |
-| **Supabase CLI** | latest | Optional, for local development |
+| **Supabase CLI** | latest | Required for local development |
 
 > **Important**   
 > Node 14 and earlier are **not** supported due to optional‑chaining syntax and native ES‑modules in dependencies.
@@ -146,29 +157,23 @@ Visit **http://localhost:5173** (default Vite port).
 
 ### Configuration <a name="configuration"></a>
 
-Create a `.env.local` in the project root (never commit this file):
+1. Create a Supabase project at [supabase.com](https://supabase.com)
 
-```env
-# .env.local
-VITE_GEMINI_API_KEY=your_google_gemini_key
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-| Variable | Purpose |
-|----------|---------|
-| `VITE_GEMINI_API_KEY` | Required for AI verification. Get one from [Google AI Studio](https://aistudio.google.com). |
-| `VITE_SUPABASE_URL` | Your Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | Your Supabase anon/public key |
-
-For Supabase Edge Functions, set the following secrets:
+2. Set the required secrets in your Supabase project:
 
 ```bash
 supabase secrets set GEMINI_API_KEY=your_google_gemini_key
 ```
 
-* No other environment variables are required for dev/test.  
-* **Never** overwrite `.env` files in CI/prod without explicit confirmation (see CONTRIBUTING).
+3. Configure your local environment file `.env.local` (never commit this file):
+
+```env
+# .env.local
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+All sensitive API keys are stored securely as Supabase secrets and accessed only via Edge Functions, never exposed to the client.
 
 ---
 
@@ -190,31 +195,6 @@ Results include:
 
 ## 📖 API Reference <a name="api-reference"></a>
 
-Base URL: `/api`
-
-```ts
-// POST /api/analyze/url
-type AnalyzeUrlBody = { url: string };
-type AnalyzeResponse = {
-  risk: 'safe' | 'suspicious' | 'scam';
-  details: string[];
-  language: string;
-  analyzedAt: string; // ISO‑8601
-};
-
-export async function analyzeUrl(url: string) {
-  const res = await fetch('/api/analyze/url', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url } satisfies AnalyzeUrlBody),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json() as Promise<AnalyzeResponse>;
-}
-```
-
-> Further endpoints: `/api/analyze/text`, `/api/analyze/voice` — see `docs/api.md`.
-
 ### Edge Function Endpoints
 
 | Endpoint | Purpose | Request Format | Response Format |
@@ -222,6 +202,27 @@ export async function analyzeUrl(url: string) {
 | **/secure-gemini** | AI content analysis | `{ content, detectionType, language }` | `{ riskAssessment, explanation, confidenceLevel }` |
 | **/speech-to-text** | Audio transcription | `{ audio }` (base64) | `{ text }` |
 | **/secure-storage** | Analytics storage | `{ eventType, data }` | `{ success, id }` |
+
+These endpoints are securely accessible through the Supabase client:
+
+```ts
+// Example: Analyzing content with secure-gemini
+const { data, error } = await supabase.functions.invoke('secure-gemini', {
+  body: { 
+    content: "Message or URL to analyze", 
+    detectionType: "text", // or "url"
+    language: "en"
+  }
+});
+
+if (error) {
+  console.error('Error:', error);
+} else {
+  console.log('Risk assessment:', data.riskAssessment);
+  console.log('Explanation:', data.explanation);
+  console.log('Confidence level:', data.confidenceLevel);
+}
+```
 
 ---
 
@@ -262,7 +263,7 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for full text.
 ## 🙏 Acknowledgements <a name="acknowledgements"></a>
 
 * **Google Gemini AI** — verification engine  
-* **Supabase** — backend infrastructure and serverless functions
+* **Supabase** — backend infrastructure, serverless functions, and secure key management
 * **Deno** — secure runtime for edge functions
 * The open‑source ecosystem (React, Vite, Tailwind, shadcn/ui, TanStack Query, Vitest)  
 * Contributors and testers who help keep ScamShield sharp  
