@@ -6,6 +6,20 @@
 import { Language, RiskLevel } from "../types";
 import { supabase } from "../integrations/supabase/client";
 
+// Typdefinition für Verifikationsergebnisse
+export interface VerificationResult {
+  riskAssessment: RiskLevel;
+  explanation: string;
+  confidenceLevel?: 'high' | 'medium' | 'low';
+}
+
+// Typdefinition für Jobstatus
+export interface JobStatus {
+  status: 'pending' | 'completed' | 'failed';
+  result?: VerificationResult;
+  error?: string;
+}
+
 /**
  * Startet eine asynchrone Verifizierung von Inhalten über die Gemini AI
  * @param content - Der zu verifizierende Inhalt (URL oder Text)
@@ -17,7 +31,7 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
   jobId: string;
 }> => {
   try {
-    // Call the secure Supabase Edge Function to start the job
+    // Aufruf der sicheren Supabase Edge Function, um den Job zu starten
     const { data, error } = await supabase.functions.invoke('secure-gemini', {
       body: { content, detectionType, language }
     });
@@ -32,27 +46,18 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
     };
   } catch (error) {
     console.error('Error verifying with secure Gemini function:', error);
-    throw new Error(`Failed to start verification job: ${error.message}`);
+    throw new Error(`Failed to start verification job: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
 
 /**
- * Ruft das Ergebnis eines Verifikationsjobs ab
+ * Ruft den Status eines Verifikationsjobs ab
  * @param jobId - Die Job-ID der Verifikationsanfrage
  * @returns Status und Ergebnis des Jobs
  */
-export const getVerificationResult = async (jobId: string): Promise<{
-  status: 'pending' | 'completed' | 'failed';
-  result?: {
-    riskAssessment: RiskLevel;
-    explanation: string;
-    confidenceLevel?: 'high' | 'medium' | 'low';
-  };
-  error?: string;
-}> => {
+export const getVerificationResult = async (jobId: string): Promise<JobStatus> => {
   try {
-    // Call the secure Supabase Edge Function to get the job status
-    // Fix: use query string approach instead of queryParams which doesn't exist
+    // Aufruf der sicheren Supabase Edge Function mit der Job-ID als Query-Parameter
     const { data, error } = await supabase.functions.invoke(`secure-gemini/job-status?jobId=${jobId}`, {
       body: {},
       method: 'GET',
@@ -78,7 +83,7 @@ export const getVerificationResult = async (jobId: string): Promise<{
     console.error('Error getting verification result:', error);
     return {
       status: 'failed',
-      error: `Failed to get verification result: ${error.message}`
+      error: `Failed to get verification result: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 };

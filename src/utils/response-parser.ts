@@ -1,66 +1,68 @@
 
 /**
- * Modul zur Verarbeitung und Analyse von KI-Antworten
+ * Parser für Gemini AI Antworten
+ * Extrahiert strukturierte Informationen aus den AI-Antworten
  */
+
 import { RiskLevel } from "../types";
 
 /**
- * Extrahiert die Risikobewertung aus der KI-Antwort
- * @param aiResponse - Die KI-Antwort als Text
- * @returns Risikostufe und Vertrauensniveau
+ * Extrahiert die Risikobewertung aus der Gemini-Antwort
+ * @param aiResponse - Die Rohantwort von Gemini
+ * @returns Die Risikostufe (safe, suspicious oder scam)
  */
-export const extractRiskAssessment = (aiResponse: string): { 
-  riskLevel: RiskLevel, 
-  confidenceLevel?: 'high' | 'medium' | 'low' 
-} => {
-  const lowerResponse = aiResponse.toLowerCase();
-  
-  if (lowerResponse.includes('classification: scam')) {
-    return { riskLevel: 'scam', confidenceLevel: 'high' };
-  } else if (lowerResponse.includes('classification: high suspicion')) {
-    return { riskLevel: 'suspicious', confidenceLevel: 'high' };
-  } else if (lowerResponse.includes('classification: suspicious')) {
-    return { riskLevel: 'suspicious', confidenceLevel: 'medium' };
-  } else if (lowerResponse.includes('classification: safe')) {
-    return { riskLevel: 'safe', confidenceLevel: 'high' };
+export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
+  if (aiResponse.toLowerCase().includes('classification: scam')) {
+    return 'scam';
+  } else if (
+    aiResponse.toLowerCase().includes('classification: high suspicion') ||
+    aiResponse.toLowerCase().includes('classification: suspicious')
+  ) {
+    return 'suspicious';
+  } else if (aiResponse.toLowerCase().includes('classification: safe')) {
+    return 'safe';
   }
   
-  // Default fallback using older detection method
-  if (lowerResponse.includes('scam')) {
-    return { riskLevel: 'scam' };
-  } else if (lowerResponse.includes('suspicious') || lowerResponse.includes('caution')) {
-    return { riskLevel: 'suspicious' };
-  } else if (lowerResponse.includes('safe')) {
-    return { riskLevel: 'safe' };
-  }
-  
-  // Ultimate fallback
-  return { riskLevel: 'suspicious', confidenceLevel: 'low' };
+  // Standardwert bei unklarer Klassifikation
+  return 'suspicious';
 };
 
 /**
- * Extrahiert die Erklärung aus der KI-Antwort
- * @param aiResponse - Die KI-Antwort als Text
- * @returns Die extrahierte Erklärung
+ * Extrahiert die Erklärung aus der Gemini-Antwort
+ * @param aiResponse - Die Rohantwort von Gemini
+ * @returns Der Erklärungstext zur Risikobewertung
  */
 export const extractExplanation = (aiResponse: string): string => {
-  // First try to remove the classification header
   const classificationMatch = aiResponse.match(/CLASSIFICATION: (SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i);
   
   if (classificationMatch) {
-    // Get everything after the classification
-    const explanationPart = aiResponse.substring(aiResponse.indexOf(classificationMatch[0]) + classificationMatch[0].length).trim();
-    if (explanationPart) {
-      return explanationPart;
-    }
+    // Alles nach der Klassifikationszeile zurückgeben
+    return aiResponse
+      .substring(aiResponse.indexOf(classificationMatch[0]) + classificationMatch[0].length)
+      .trim();
   }
   
-  // Fallback to the original extraction method
-  const lines = aiResponse.split('\n').filter(line => line.trim());
-  
-  if (lines.length > 1) {
-    return lines.slice(1).join(' ').trim();
+  // Falls kein Klassifikationsmuster gefunden wurde, die gesamte Antwort zurückgeben
+  return aiResponse.trim();
+};
+
+/**
+ * Bestimmt den Vertrauensgrad basierend auf der Klassifikation in der Antwort
+ * @param aiResponse - Die Rohantwort von Gemini
+ * @returns Der Vertrauensgrad (high, medium oder low)
+ */
+export const extractConfidenceLevel = (aiResponse: string): 'high' | 'medium' | 'low' => {
+  if (
+    aiResponse.toLowerCase().includes('classification: scam') ||
+    aiResponse.toLowerCase().includes('classification: safe')
+  ) {
+    return 'high';
+  } else if (aiResponse.toLowerCase().includes('classification: high suspicion')) {
+    return 'high';
+  } else if (aiResponse.toLowerCase().includes('classification: suspicious')) {
+    return 'medium';
   }
   
-  return aiResponse;
+  // Standardwert bei unklarer Konfidenzeinstufung
+  return 'medium';
 };

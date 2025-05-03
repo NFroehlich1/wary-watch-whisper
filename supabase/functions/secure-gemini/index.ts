@@ -109,7 +109,7 @@ serve(async (req) => {
 });
 
 /**
- * Handle job status request - Updated to accept URL directly
+ * Handle job status request
  * @param req - Request object
  * @param url - URL object already parsed
  * @returns Response with job status and result

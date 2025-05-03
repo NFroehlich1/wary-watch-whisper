@@ -5,7 +5,7 @@
  */
 import { verifyWithGemini, getVerificationResult } from './gemini-client';
 import { getUrlPromptInEnglish, getTextPromptInEnglish, getUrlPrompt, getTextPrompt } from './prompt-builder';
-import { extractRiskAssessment, extractExplanation } from './response-parser';
+import { extractRiskAssessment, extractExplanation, extractConfidenceLevel } from './response-parser';
 
 // Exportiere die Haupt-Client-Funktionen
 export { verifyWithGemini, getVerificationResult };
@@ -14,4 +14,7 @@ export { verifyWithGemini, getVerificationResult };
 export { getUrlPromptInEnglish, getTextPromptInEnglish, getUrlPrompt, getTextPrompt };
 
 // Exportiere Response-Parser-Funktionen
-export { extractRiskAssessment, extractExplanation };
+export { extractRiskAssessment, extractExplanation, extractConfidenceLevel };
+
+// Exportiere Typen für eine bessere Integration
+export type { VerificationResult, JobStatus } from './gemini-client';

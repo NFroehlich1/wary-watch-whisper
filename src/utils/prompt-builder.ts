@@ -1,13 +1,13 @@
 
 /**
- * Modul zur Generierung strukturierter Prompts für die AI-basierte Analyse
+ * Generiert Prompts für die Gemini AI Anfragen
+ * Diese Datei enthält Funktionen zur Erstellung strukturierter Prompts
  */
+
 import { Language } from "../types";
 
 /**
- * Generiert einen URL-Analyse-Prompt in Englisch
- * @param url - Die zu analysierende URL
- * @returns Formatierter Prompt-String
+ * Erzeugt einen Prompt für URL-Analyse in englischer Sprache
  */
 export const getUrlPromptInEnglish = (url: string): string => {
   return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". 
@@ -21,9 +21,7 @@ export const getUrlPromptInEnglish = (url: string): string => {
 };
 
 /**
- * Generiert einen Text-Analyse-Prompt in Englisch
- * @param text - Der zu analysierende Text
- * @returns Formatierter Prompt-String
+ * Erzeugt einen Prompt für Text-Analyse in englischer Sprache
  */
 export const getTextPromptInEnglish = (text: string): string => {
   return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". 
@@ -37,37 +35,19 @@ export const getTextPromptInEnglish = (text: string): string => {
 };
 
 /**
- * Mehrsprachiger URL-Prompt-Generator (wird aus Kompatibilitätsgründen beibehalten)
- * @param url - Die zu analysierende URL
- * @param language - Die gewünschte Sprache
- * @returns Formatierter Prompt-String in der angegebenen Sprache
+ * Baut den URL-Prompt entsprechend der angegebenen Sprache
  */
-export const getUrlPrompt = (url: string, language: Language): string => {
-  if (language === 'es') {
-    return `Analiza si esta URL es segura, sospechosa o una estafa. URL: "${url}". Por favor, clasifícala como "safe", "suspicious" o "scam" y proporciona una breve justificación.`;
-  } else if (language === 'fr') {
-    return `Analysez si cette URL est sûre, suspecte ou une arnaque. URL: "${url}". Veuillez la classer comme "safe", "suspicious" ou "scam" et fournir une brève justification.`;
-  } else if (language === 'de') {
-    return `Analysieren Sie, ob diese URL sicher, verdächtig oder betrügerisch ist. URL: "${url}". Bitte klassifizieren Sie sie als "safe", "suspicious" oder "scam" und geben Sie eine kurze Begründung an.`;
-  } else {
-    return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification.`;
-  }
+export const getUrlPrompt = (url: string, language: Language = 'en'): string => {
+  // Momentan nutzen wir nur englische Prompts für konsistentere AI-Ergebnisse
+  // Zukünftig könnte dies für mehrsprachige Eingaben erweitert werden
+  return getUrlPromptInEnglish(url);
 };
 
 /**
- * Mehrsprachiger Text-Prompt-Generator (wird aus Kompatibilitätsgründen beibehalten)
- * @param text - Der zu analysierende Text
- * @param language - Die gewünschte Sprache
- * @returns Formatierter Prompt-String in der angegebenen Sprache
+ * Baut den Text-Prompt entsprechend der angegebenen Sprache
  */
-export const getTextPrompt = (text: string, language: Language): string => {
-  if (language === 'es') {
-    return `Analiza si este mensaje contiene indicios de estafa, contenido sospechoso o si es seguro. Mensaje: "${text}". Por favor, clasifícalo como "safe", "suspicious" o "scam" y proporciona una breve justificación.`;
-  } else if (language === 'fr') {
-    return `Analysez si ce message contient des signes d'arnaque, un contenu suspect ou s'il est sûr. Message: "${text}". Veuillez le classer comme "safe", "suspicious" ou "scam" et fournir une brève justification.`;
-  } else if (language === 'de') {
-    return `Analysieren Sie, ob diese Nachricht Anzeichen für Betrug enthält, verdächtigen Inhalt oder ob sie sicher ist. Nachricht: "${text}". Bitte klassifizieren Sie sie als "safe", "suspicious" oder "scam" und geben Sie eine kurze Begründung an.`;
-  } else {
-    return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification.`;
-  }
+export const getTextPrompt = (text: string, language: Language = 'en'): string => {
+  // Momentan nutzen wir nur englische Prompts für konsistentere AI-Ergebnisse
+  // Zukünftig könnte dies für mehrsprachige Eingaben erweitert werden
+  return getTextPromptInEnglish(text);
 };
