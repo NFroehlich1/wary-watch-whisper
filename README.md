@@ -1,73 +1,149 @@
-# Welcome to your Lovable project
+ ScamShield: Multilingual Scam Detection Tool
 
-## Project info
+[![TypeScript](https://img.shields.io/badge/TypeScript-4.9.5-blue.svg)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**URL**: https://lovable.dev/projects/55f99922-a7cd-40bc-9af1-b8dab247d4e0
+## 🛡️ Overview
 
-## How can I edit this code?
+ScamShield is a powerful, AI-powered web application designed to protect users from online scams through advanced detection techniques across multiple languages. It analyzes URLs, text messages, and voice notes to identify potential threats, providing detailed explanations of its assessments.
 
-There are several ways of editing your application.
+![ScamShield Screenshot](screenshot.png)
 
-**Use Lovable**
+## ✨ Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/55f99922-a7cd-40bc-9af1-b8dab247d4e0) and start prompting.
+- **Multiple Detection Methods**:
+  - 🔗 URL Analysis: Scan links for suspicious patterns and potential phishing attempts
+  - 📝 Text Analysis: Examine messages for scam indicators in multiple languages
+  - 🎤 Voice Note Analysis: Transcribe and analyze spoken content for fraud attempts
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Advanced AI Integration**:
+  - 🧠 Google Gemini AI-powered verification
+  - ⚡ Real-time threat assessment
+  - 🔍 Detailed justifications for each analysis
+  - 💬 Interactive follow-up questions about analysis results
 
-**Use your preferred IDE**
+- **Multilingual Support**:
+  - 🇺🇸 English
+  - 🇪🇸 Spanish
+  - 🇫🇷 French
+  - 🇩🇪 German
+  - ...
+    
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 Getting Started
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Prerequisites
 
-Follow these steps:
+- Node.js (v16 or higher)
+- npm or yarn
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Installation
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```bash
+# Clone this repository
+git clone https://github.com/yourusername/scamshield.git
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Navigate into the project directory
+cd scamshield
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Install dependencies
+npm install
+# or
+yarn install
+
+# Start the development server
 npm run dev
-```
+# or
+yarn dev
 
-**Edit a file directly in GitHub**
+Open your browser and visit http://localhost:5173
+Configuration
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+To use all features, you'll need to configure your Google Gemini API key:
 
-**Use GitHub Codespaces**
+    Obtain an API key from Google AI Studio
+    Add your key in the application settings
+    Enable the Gemini integration for enhanced scam detection
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+🛠️ Tech Stack
 
-## What technologies are used for this project?
+    Frontend:
+        React 18
+        TypeScript
+        Vite for fast development
+        Tailwind CSS for styling
+        shadcn/ui for UI components
+        React Hook Form for form handling
+        Zod for form validation
+        Tanstack Query for API requests
 
-This project is built with:
+    Integrations:
+        Google Gemini AI API for advanced verification
+        Text-to-speech capabilities
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+📋 Usage
+URL Checker
 
-## How can I deploy this project?
+Enter any URL to analyze it for potential threats. Our system evaluates the domain, path patterns, and known indicators of phishing or malicious websites.
+Text Analyzer
 
-Simply open [Lovable](https://lovable.dev/projects/55f99922-a7cd-40bc-9af1-b8dab247d4e0) and click on Share -> Publish.
+Paste text message content to scan for common scam patterns. The system analyzes language, urgency indicators, requests for personal information, and other red flags.
+Voice Note Analyzer
 
-## Can I connect a custom domain to my Lovable project?
+Upload a voice recording to have it transcribed and analyzed for potential scam content, bringing scam detection to audio content.
+Analysis Results
 
-Yes, you can!
+Results are clearly displayed with:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+    Risk level assessment (Safe, Suspicious, Scam)
+    Detailed justification explaining the assessment
+    Language detection
+    Timestamp of the analysis
+    Option to ask follow-up questions about the analysis
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+📖 API Documentation
+
+For developers interested in integrating with our system:
+
+// Example API call to analyze a URL
+const analyzeUrl = async (url: string) => {
+  const response = await fetch('/api/analyze/url', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ url }),
+  });
+  return await response.json();
+};
+
+🔒 Privacy
+
+This tool is designed with privacy in mind:
+
+    No personal data is stored
+    Analysis is performed locally when possible
+    API integrations use secure, encrypted connections
+    No usage tracking beyond anonymous statistics
+
+🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+    Fork the project
+    Create your feature branch (git checkout -b feature/amazing-feature)
+    Commit your changes (git commit -m 'Add some amazing feature')
+    Push to the branch (git push origin feature/amazing-feature)
+    Open a Pull Request
+
+📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+🙏 Acknowledgements
+
+    Google Gemini AI for providing the advanced verification capabilities
+    Open source community for the various libraries and tools that made this project possible
+    All contributors and testers who have helped improve ScamShield
+
+Built with ❤️ to protect people from online scams
