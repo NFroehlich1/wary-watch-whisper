@@ -1,6 +1,6 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { ScamResult, DetectionType, Language } from '../types';
+import { ScamResult, DetectionType, Language, GeminiOptions } from '../types';
+import { verifyWithGemini } from '../utils/gemini';
 
 interface ScamDetectionContextType {
   loading: boolean;
@@ -9,6 +9,8 @@ interface ScamDetectionContextType {
   resetResult: () => void;
   playAudio: () => void;
   audioPlaying: boolean;
+  geminiOptions: GeminiOptions;
+  setGeminiOptions: (options: Partial<GeminiOptions>) => void;
 }
 
 const ScamDetectionContext = createContext<ScamDetectionContextType | undefined>(undefined);
@@ -25,6 +27,14 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScamResult | null>(null);
   const [audioPlaying, setAudioPlaying] = useState(false);
+  const [geminiOptions, setGeminiOptionsState] = useState<GeminiOptions>({
+    apiKey: 'AIzaSyDiZ4Kc7pNYsEqGw5Xqq_Zu2DvlCTibR9o', // Default from user input
+    enabled: true
+  });
+  
+  const setGeminiOptions = (options: Partial<GeminiOptions>) => {
+    setGeminiOptionsState(prev => ({ ...prev, ...options }));
+  };
   
   // In a real app, this would make API calls to your backend
   const detectScam = async (content: string | File, type: DetectionType, language?: Language) => {
@@ -32,7 +42,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
     
     try {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Mock detection logic
       let detectedRisk: ScamResult;
@@ -43,6 +53,30 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
         detectedRisk = mockTextCheck(content as string, language);
       } else {
         detectedRisk = mockVoiceCheck();
+      }
+      
+      // Add Gemini AI verification if enabled
+      if (geminiOptions.enabled && geminiOptions.apiKey && (type === 'url' || type === 'text')) {
+        try {
+          const contentToVerify = content as string;
+          const geminiResult = await verifyWithGemini(
+            contentToVerify, 
+            type, 
+            detectedRisk.detectedLanguage, 
+            geminiOptions.apiKey
+          );
+          
+          // Add Gemini's assessment to the result
+          detectedRisk.aiVerification = `Gemini AI: ${geminiResult.explanation}`;
+          
+          // In case of disagreement between our mock check and Gemini, make the result more suspicious
+          if (geminiResult.riskAssessment === 'scam' && detectedRisk.riskLevel !== 'scam') {
+            detectedRisk.riskLevel = 'suspicious';
+            detectedRisk.justification += ' However, additional AI analysis found potential scam patterns.';
+          }
+        } catch (error) {
+          console.error('Gemini verification error:', error);
+        }
       }
       
       setResult(detectedRisk);
@@ -189,7 +223,9 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
         detectScam, 
         resetResult, 
         playAudio,
-        audioPlaying
+        audioPlaying,
+        geminiOptions,
+        setGeminiOptions
       }}
     >
       {children}

@@ -74,6 +74,13 @@ const ResultDisplay = () => {
           <p className="text-base">{result.justification}</p>
         </div>
         
+        {result.aiVerification && (
+          <div>
+            <h4 className="font-medium text-sm text-muted-foreground mb-1">AI Verification:</h4>
+            <p className="text-base">{result.aiVerification}</p>
+          </div>
+        )}
+        
         <div>
           <h4 className="font-medium text-sm text-muted-foreground mb-1">Detected Language:</h4>
           <p className="text-base">{getLanguageName()}</p>

@@ -11,4 +11,11 @@ export type ScamResult = {
   detectedLanguage: Language;
   originalContent: string;
   timestamp: string;
+  aiVerification?: string; // Additional verification from Gemini AI
 };
+
+export type GeminiOptions = {
+  apiKey: string;
+  enabled: boolean;
+};
+
