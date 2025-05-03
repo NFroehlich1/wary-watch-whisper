@@ -25,6 +25,8 @@ const TextChecker = () => {
       setText('URGENTE: Su cuenta ha sido comprometida. Por favor verifique su identidad proporcionando su contraseña y datos de tarjeta de crédito inmediatamente.');
     } else if (exampleType === 'scam-fr') {
       setText('URGENT: Votre compte a été compromis. Veuillez vérifier votre identité en fournissant votre mot de passe et les détails de votre carte de crédit immédiatement.');
+    } else if (exampleType === 'scam-de') {
+      setText('DRINGEND: Ihr Konto wurde kompromittiert. Bitte bestätigen Sie Ihre Identität, indem Sie Ihr Passwort und Ihre Kreditkartendaten sofort angeben.');
     } else if (exampleType === 'safe') {
       setText('Hi there! Just checking in to see how your day is going. Let me know if you want to grab coffee sometime next week.');
     }
@@ -48,6 +50,9 @@ const TextChecker = () => {
         </Button>
         <Button variant="outline" size="sm" onClick={() => handleExampleSelect('scam-fr')}>
           French Scam Example
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => handleExampleSelect('scam-de')}>
+          German Scam Example
         </Button>
         <Button variant="outline" size="sm" onClick={() => handleExampleSelect('safe')}>
           Safe Example

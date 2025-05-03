@@ -1,5 +1,5 @@
 
-export type Language = 'en' | 'es' | 'fr';
+export type Language = 'en' | 'es' | 'fr' | 'de';
 
 export type DetectionType = 'url' | 'text' | 'voice';
 
@@ -18,4 +18,3 @@ export type GeminiOptions = {
   apiKey: string;
   enabled: boolean;
 };
-
