@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { ScamResult, DetectionType, Language, GeminiOptions } from '../types';
-import { verifyWithGemini } from '../utils/gemini';
+import { verifyWithGemini, getVerificationResult } from '../utils/gemini';
 import { detectTextLanguage } from '../utils/language';
 import { mockUrlCheck, mockTextCheck, mockVoiceCheck } from '../utils/mockDetectors';
 import { playAudioFromResult } from '../utils/textToSpeech';
@@ -54,17 +54,45 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
       if (geminiOptions.enabled && (type === 'url' || type === 'text')) {
         try {
           const contentToVerify = content as string;
-          const geminiResult = await verifyWithGemini(
+          
+          // Fix: First get jobId
+          const { jobId } = await verifyWithGemini(
             contentToVerify, 
             type, 
             detectedRisk.detectedLanguage
           );
           
-          // Use Gemini's assessment as the primary source of truth
-          detectedRisk.riskLevel = geminiResult.riskAssessment;
-          detectedRisk.confidenceLevel = geminiResult.confidenceLevel;
-          detectedRisk.justification = geminiResult.explanation;
-          detectedRisk.aiVerification = `Gemini AI analyzed this content as ${geminiResult.riskAssessment.toUpperCase()}${geminiResult.confidenceLevel ? ` (${geminiResult.confidenceLevel} confidence)` : ''}: ${geminiResult.explanation}`;
+          // Now check for job completion (in real app, we would poll)
+          let jobComplete = false;
+          let attempts = 0;
+          let maxAttempts = 10;
+          let geminiResult;
+          
+          while (!jobComplete && attempts < maxAttempts) {
+            attempts++;
+            // Wait 1 second between checks
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const jobStatus = await getVerificationResult(jobId);
+            
+            if (jobStatus.status === 'completed' && jobStatus.result) {
+              jobComplete = true;
+              geminiResult = jobStatus.result;
+            } else if (jobStatus.status === 'failed') {
+              console.error('Gemini verification failed:', jobStatus.error);
+              break;
+            }
+          }
+          
+          if (geminiResult) {
+            // Use Gemini's assessment as the primary source of truth
+            detectedRisk.riskLevel = geminiResult.riskAssessment;
+            detectedRisk.confidenceLevel = geminiResult.confidenceLevel;
+            detectedRisk.justification = geminiResult.explanation;
+            detectedRisk.aiVerification = `Gemini AI analyzed this content as ${geminiResult.riskAssessment.toUpperCase()}${geminiResult.confidenceLevel ? ` (${geminiResult.confidenceLevel} confidence)` : ''}: ${geminiResult.explanation}`;
+          } else {
+            detectedRisk.aiVerification = "Gemini AI analysis timed out or failed. Using built-in detection instead.";
+          }
         } catch (error) {
           console.error('Gemini verification error:', error);
           // If AI analysis fails, we'll fall back to the mock results

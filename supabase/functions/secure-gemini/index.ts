@@ -59,7 +59,7 @@ serve(async (req) => {
   
   // Check if this is a job status request
   if (path === 'job-status') {
-    return handleJobStatus(req);
+    return handleJobStatus(req, url);
   }
 
   try {
@@ -109,13 +109,14 @@ serve(async (req) => {
 });
 
 /**
- * Handle job status request
+ * Handle job status request - Updated to accept URL directly
  * @param req - Request object
+ * @param url - URL object already parsed
  * @returns Response with job status and result
  */
-async function handleJobStatus(req) {
+async function handleJobStatus(req, url) {
   try {
-    const url = new URL(req.url);
+    // Get jobId from the query parameters
     const jobId = url.searchParams.get('jobId');
     
     if (!jobId) {

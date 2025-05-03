@@ -52,13 +52,13 @@ export const getVerificationResult = async (jobId: string): Promise<{
 }> => {
   try {
     // Call the secure Supabase Edge Function to get the job status
-    const { data, error } = await supabase.functions.invoke('secure-gemini/job-status', {
+    // Fix: use query string approach instead of queryParams which doesn't exist
+    const { data, error } = await supabase.functions.invoke(`secure-gemini/job-status?jobId=${jobId}`, {
       body: {},
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
-      },
-      queryParams: { jobId }
+      }
     });
     
     if (error) {
