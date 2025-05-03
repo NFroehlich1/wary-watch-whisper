@@ -1,15 +1,46 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useScamDetection } from '@/context/ScamDetectionContext';
-import { Volume2, Shield, ShieldAlert, ShieldX, Smile } from 'lucide-react';
+import { Volume2, Shield, ShieldAlert, ShieldX, Smile, MessageCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+
+// Form schema with validation to ensure questions are related to analysis
+const questionSchema = z.object({
+  question: z.string()
+    .min(5, { message: "Question must be at least 5 characters" })
+    .max(200, { message: "Question is too long" })
+    .refine(
+      (val) => {
+        // Only allow questions about analysis, risk, or explanation
+        const analysisTerms = ['why', 'how', 'what', 'explain', 'analysis', 'risk', 'reason', 'detection', 'scam', 'suspicious', 'safe'];
+        return analysisTerms.some(term => val.toLowerCase().includes(term));
+      }, 
+      { message: "Please ask questions related to the analysis results" }
+    )
+});
+
+type QuestionForm = z.infer<typeof questionSchema>;
 
 const ResultDisplay = () => {
-  const { result, playAudio, audioPlaying } = useScamDetection();
+  const { result, playAudio, audioPlaying, askAnalysisQuestion } = useScamDetection();
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
+  const [answerLoading, setAnswerLoading] = useState(false);
+  const [answer, setAnswer] = useState<string | null>(null);
+  
+  // Initialize form
+  const form = useForm<QuestionForm>({
+    resolver: zodResolver(questionSchema),
+    defaultValues: {
+      question: "",
+    },
+  });
   
   if (!result) return null;
   
@@ -96,6 +127,26 @@ const ResultDisplay = () => {
       return emojis.positive;
     }
   };
+
+  // Handle question submission
+  const onSubmitQuestion = async (data: QuestionForm) => {
+    if (!result) return;
+    
+    setAnswerLoading(true);
+    setAnswer(null);
+    
+    try {
+      // Use the context method to ask a question about analysis
+      const response = await askAnalysisQuestion(data.question, result);
+      setAnswer(response);
+      form.reset();
+    } catch (error) {
+      console.error("Failed to get answer:", error);
+      setAnswer("Sorry, I couldn't process your question about this analysis. Please try again with a different question.");
+    } finally {
+      setAnswerLoading(false);
+    }
+  };
   
   return (
     <Card className="mt-6">
@@ -139,6 +190,55 @@ const ResultDisplay = () => {
           <p className="text-sm bg-muted p-3 rounded-md whitespace-pre-wrap max-h-32 overflow-auto">
             {result.originalContent}
           </p>
+        </div>
+
+        <div>
+          <h4 className="font-medium text-sm text-muted-foreground mb-1">Ask About Analysis:</h4>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitQuestion)} className="space-y-2">
+              <div className="flex gap-2">
+                <FormField
+                  control={form.control}
+                  name="question"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormControl>
+                        <Input 
+                          placeholder="Ask why this was classified this way..." 
+                          {...field} 
+                          disabled={answerLoading}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" size="sm" disabled={answerLoading}>
+                  {answerLoading ? (
+                    <span className="flex items-center gap-1">
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent"></span>
+                      Asking...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <MessageCircle className="h-4 w-4" />
+                      Ask
+                    </span>
+                  )}
+                </Button>
+              </div>
+              {form.formState.errors.question && (
+                <p className="text-sm font-medium text-destructive">
+                  {form.formState.errors.question.message}
+                </p>
+              )}
+            </form>
+          </Form>
+          
+          {answer && (
+            <div className="mt-3 p-3 bg-primary/5 rounded-md">
+              <p className="text-sm">{answer}</p>
+            </div>
+          )}
         </div>
 
         <div>
