@@ -1,5 +1,5 @@
 
-# 🛡️ ScamShield — Multilingual Scam Detection Tool
+# 🛡️ ScamProtect — Multilingual Scam Detection Tool
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-4.9.5-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3.1-blue.svg)](https://reactjs.org/)
@@ -31,7 +31,7 @@
 
 ## 🏷️ Overview <a name="overview"></a>
 
-ScamShield is an AI‑powered web application that protects users from online scams in **multiple languages**.  
+ScamProtect is an AI‑powered web application that protects users from online scams in **multiple languages**.  
 It analyzes:
 
 * 🔗 **URLs**  
@@ -56,7 +56,7 @@ and returns a detailed, transparent assessment of potential threats.
 
 ## 🏗️ Architecture <a name="architecture"></a>
 
-ScamShield uses a modern client-server architecture with a clear separation between frontend and backend components.
+ScamProtect uses a modern client-server architecture with a clear separation between frontend and backend components.
 
 ### Frontend <a name="frontend"></a>
 
@@ -94,7 +94,7 @@ Server-side operations are handled by:
 
 ### Security <a name="security"></a>
 
-ScamShield employs a robust security architecture:
+Scam Protect employs a robust security architecture:
 
 * **No API Keys in Client Code** — All sensitive API keys are stored as Supabase Secrets
 * **Edge Function Proxies** — All external API calls are made via secure Supabase Edge Functions
