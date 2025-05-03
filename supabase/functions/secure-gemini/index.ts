@@ -17,12 +17,14 @@ serve(async (req) => {
   }
 
   try {
-    // Access the securely stored API key from environment variables
-    // We're using a hard-coded key for temporary testing
-    const apiKey = "AIzaSyCxenWK2mcYIquGRi37KZrZXLo9duWHt3Q"; // Using the API key provided by the user
+    // Access the securely stored API key from environment variables or use hardcoded key
+    // Attempting to get from environment first, then falling back to hardcoded key
+    const apiKey = Deno.env.get('GEMINI_API_KEY') || "AIzaSyCxenWK2mcYIquGRi37KZrZXLo9duWHt3Q";
+    
+    console.log(`Using API key: ${apiKey ? "Key is present" : "Key is missing"}`);
     
     if (!apiKey) {
-      console.error("GEMINI_API_KEY is not set in the environment variables");
+      console.error("GEMINI_API_KEY is not set in the environment variables and fallback is not working");
       return new Response(
         JSON.stringify({ error: "API key is not configured. Please set GEMINI_API_KEY in Supabase secrets." }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
