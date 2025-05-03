@@ -43,11 +43,23 @@ const createErrorResponse = (message: string, status = 500, error?: Error) => {
   return createResponse({ error: message }, status);
 };
 
+// In-memory job storage (for demo purposes - in production use a database)
+// Format: { [jobId: string]: { status: 'pending' | 'completed' | 'failed', result?: any, error?: string } }
+const jobs = new Map();
+
 // Main function that handles incoming requests
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+  
+  const url = new URL(req.url);
+  const path = url.pathname.split('/').pop();
+  
+  // Check if this is a job status request
+  if (path === 'job-status') {
+    return handleJobStatus(req);
   }
 
   try {
@@ -79,6 +91,58 @@ serve(async (req) => {
       return createErrorResponse("Missing 'detectionType' parameter", 400);
     }
 
+    // Create a unique job ID
+    const jobId = crypto.randomUUID();
+    jobs.set(jobId, { status: 'pending' });
+    
+    console.log(`Created job ${jobId} for content type: ${detectionType}`);
+    
+    // Start processing in the background
+    EdgeRuntime.waitUntil(processGeminiRequest(jobId, content, detectionType, apiKey));
+    
+    // Return job ID immediately
+    return createResponse({ jobId });
+
+  } catch (error) {
+    return createErrorResponse(error.message, 500, error);
+  }
+});
+
+/**
+ * Handle job status request
+ * @param req - Request object
+ * @returns Response with job status and result
+ */
+async function handleJobStatus(req) {
+  try {
+    const url = new URL(req.url);
+    const jobId = url.searchParams.get('jobId');
+    
+    if (!jobId) {
+      return createErrorResponse("Missing jobId parameter", 400);
+    }
+    
+    const job = jobs.get(jobId);
+    
+    if (!job) {
+      return createErrorResponse("Job not found", 404);
+    }
+    
+    return createResponse(job);
+  } catch (error) {
+    return createErrorResponse("Error fetching job status", 500, error);
+  }
+}
+
+/**
+ * Process Gemini request asynchronously
+ * @param jobId - Job ID
+ * @param content - Content to analyze
+ * @param detectionType - Type of detection
+ * @param apiKey - Gemini API key
+ */
+async function processGeminiRequest(jobId: string, content: string, detectionType: string, apiKey: string) {
+  try {
     // Determine the appropriate prompt based on detection type
     let prompt = "";
     if (detectionType === 'url') {
@@ -87,29 +151,35 @@ serve(async (req) => {
       prompt = buildTextPrompt(content);
     }
 
-    console.log(`Calling Gemini API with content type: ${detectionType}`);
+    console.log(`Processing Gemini API call for job ${jobId}`);
     console.log(`Content (first 50 chars): ${content.substring(0, 50)}...`);
     
     // Call the Gemini API with the API key
     const response = await callGeminiAPI(prompt, apiKey);
     const aiResponse = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    console.log(`Response preview: ${aiResponse.substring(0, 100)}...`);
+    console.log(`Response preview for job ${jobId}: ${aiResponse.substring(0, 100)}...`);
     
     // Process the AI response to extract classification and explanation
     const { riskLevel, confidenceLevel, explanation } = processAiResponse(aiResponse);
 
-    // Return the processed response
-    return createResponse({
-      riskAssessment: riskLevel,
-      explanation: explanation,
-      confidenceLevel: confidenceLevel
+    // Update job with result
+    jobs.set(jobId, {
+      status: 'completed',
+      result: {
+        riskAssessment: riskLevel,
+        explanation: explanation,
+        confidenceLevel: confidenceLevel
+      }
     });
-
   } catch (error) {
-    return createErrorResponse(error.message, 500, error);
+    console.error(`Error processing job ${jobId}:`, error);
+    jobs.set(jobId, {
+      status: 'failed',
+      error: error.message
+    });
   }
-});
+}
 
 /**
  * Constructs a URL analysis prompt
