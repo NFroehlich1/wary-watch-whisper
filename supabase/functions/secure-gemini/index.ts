@@ -21,7 +21,11 @@ serve(async (req) => {
     const apiKey = Deno.env.get('GEMINI_API_KEY');
     
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not set in the environment variables");
+      console.error("GEMINI_API_KEY is not set in the environment variables");
+      return new Response(
+        JSON.stringify({ error: "API key is not configured. Please set GEMINI_API_KEY in Supabase secrets." }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Parse the request body
@@ -56,6 +60,8 @@ serve(async (req) => {
       Then provide a brief justification in English.`;
     }
 
+    console.log(`Calling Gemini API with content type: ${detectionType}`);
+    
     // Call the Gemini API securely with the API key
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent', {
       method: 'POST',
@@ -73,11 +79,16 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
+      console.error(`Gemini API error: Status ${response.status}, ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`Error response: ${errorText}`);
+      throw new Error(`Gemini API error: ${response.statusText} (${response.status})`);
     }
 
     const data = await response.json();
     const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    console.log(`Received response from Gemini API: ${aiResponse.substring(0, 100)}...`);
     
     // Process the AI response to extract the classification and explanation
     let riskLevel = 'suspicious'; // Default
