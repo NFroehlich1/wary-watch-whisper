@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      gemini_jobs: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          result: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id: string
+          result?: Json | null
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          result?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pomodoro_sessions: {
         Row: {
           completed_at: string
@@ -230,6 +257,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clean_old_gemini_jobs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_question_success_rate: {
         Args: { question_uuid: string; user_uuid: string }
         Returns: number

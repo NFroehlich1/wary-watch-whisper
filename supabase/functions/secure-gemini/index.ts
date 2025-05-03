@@ -8,7 +8,7 @@ import { corsHeaders, createResponse, createErrorResponse } from "./utils.ts";
 import { callGeminiAPI } from "./gemini-client.ts";
 import { buildUrlPrompt, buildTextPrompt } from "./prompt-builder.ts";
 import { processAiResponse } from "./response-parser.ts";
-import { jobs, getJob, createJob, completeJob, failJob } from "./job-manager.ts";
+import { getJob, createJob, completeJob, failJob } from "./job-manager.ts";
 
 // Main function that handles incoming requests
 serve(async (req) => {
@@ -54,8 +54,8 @@ serve(async (req) => {
       return createErrorResponse("Missing 'detectionType' parameter", 400);
     }
 
-    // Create a unique job ID
-    const jobId = createJob();
+    // Create a unique job ID and store in database
+    const jobId = await createJob();
     
     console.log(`Created job ${jobId} for content type: ${detectionType}`);
     
@@ -85,7 +85,7 @@ async function handleJobStatus(req, url) {
       return createErrorResponse("Missing jobId parameter", 400);
     }
     
-    const job = getJob(jobId);
+    const job = await getJob(jobId);
     
     if (!job) {
       return createErrorResponse("Job not found", 404);
@@ -126,14 +126,14 @@ async function processGeminiRequest(jobId: string, content: string, detectionTyp
     // Process the AI response to extract classification and explanation
     const { riskLevel, confidenceLevel, explanation } = processAiResponse(aiResponse);
 
-    // Update job with result
-    completeJob(jobId, {
+    // Update job with result in database
+    await completeJob(jobId, {
       riskAssessment: riskLevel,
       explanation: explanation,
       confidenceLevel: confidenceLevel
     });
   } catch (error) {
     console.error(`Error processing job ${jobId}:`, error);
-    failJob(jobId, error);
+    await failJob(jobId, error);
   }
 }
