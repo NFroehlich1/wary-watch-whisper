@@ -17,10 +17,13 @@ serve(async (req) => {
   }
 
   try {
-    // Use the new API key directly
-    const apiKey = "AIzaSyDnA7pvt82LP2fdzSFj6PgU1GA_cFvuoXM"; // Using the provided API key
+    // Get the API key from environment variables or use the hardcoded one
+    const envApiKey = Deno.env.get("GEMINI_API_KEY");
+    // Fallback to hardcoded API key if environment variable is not set
+    const apiKey = envApiKey || "AIzaSyDnA7pvt82LP2fdzSFj6PgU1GA_cFvuoXM";
     
-    console.log("Starting secure-gemini function with updated API key");
+    console.log("Starting secure-gemini function");
+    console.log(`API key source: ${envApiKey ? 'environment variable' : 'hardcoded'}`);
     
     if (!apiKey) {
       console.error("API key is missing");
@@ -63,14 +66,14 @@ serve(async (req) => {
     }
 
     console.log(`Calling Gemini API with content type: ${detectionType}`);
-    console.log(`Using API key (first few chars): ${apiKey.substring(0, 5)}...`);
+    console.log(`Content (first 50 chars): ${content.substring(0, 50)}...`);
     
-    // Call the Gemini API securely with the API key
+    // Call the Gemini API with the API key
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'x-goog-api-key': apiKey, // Changed from 'Authorization': `Bearer ${apiKey}` to match Google API requirements
       },
       body: JSON.stringify({
         contents: [{
@@ -89,9 +92,11 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log("Received response from Gemini API");
+    
     const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    console.log(`Received response from Gemini API: ${aiResponse.substring(0, 100)}...`);
+    console.log(`Response preview: ${aiResponse.substring(0, 100)}...`);
     
     // Process the AI response to extract the classification and explanation
     let riskLevel = 'suspicious'; // Default
