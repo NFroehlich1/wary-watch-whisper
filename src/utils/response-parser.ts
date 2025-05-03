@@ -1,4 +1,3 @@
-
 /**
  * Parser für Gemini AI Antworten
  * Extrahiert strukturierte Informationen aus den AI-Antworten
@@ -14,17 +13,21 @@ import { RiskLevel } from "../types";
 export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
   if (aiResponse.toLowerCase().includes('classification: scam')) {
     return 'scam';
-  } else if (
-    aiResponse.toLowerCase().includes('classification: high suspicion') ||
-    aiResponse.toLowerCase().includes('classification: suspicious')
-  ) {
+  } else if (aiResponse.toLowerCase().includes('classification: high suspicion')) {
     return 'suspicious';
-  } else if (aiResponse.toLowerCase().includes('classification: safe')) {
-    return 'safe';
+  } else if (
+    aiResponse.toLowerCase().includes('classification: suspicious') &&
+    (aiResponse.toLowerCase().includes('urgent') || 
+     aiResponse.toLowerCase().includes('password') ||
+     aiResponse.toLowerCase().includes('credential') ||
+     aiResponse.toLowerCase().includes('bank details'))
+  ) {
+    // Only extract as suspicious if specific high-risk indicators are present
+    return 'suspicious';
   }
   
-  // Standardwert bei unklarer Klassifikation
-  return 'suspicious';
+  // Default to safe for ambiguous cases
+  return 'safe';
 };
 
 /**

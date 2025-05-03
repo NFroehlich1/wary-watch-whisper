@@ -1,3 +1,4 @@
+
 import { ScamResult, Language } from '../types';
 import { detectTextLanguage } from './language';
 
@@ -7,8 +8,8 @@ export const mockUrlCheck = (url: string): ScamResult => {
   
   // Secondary checks for other suspicious patterns
   const isScam = url.includes('scam') || url.includes('phish');
-  const isVerySuspicious = url.includes('verify') || url.includes('confirm') || url.includes('login');
-  const isSuspicious = url.includes('buy') || url.includes('free') || url.includes('win');
+  const isVerySuspicious = (url.includes('verify') || url.includes('confirm')) && url.includes('login');
+  const isSuspicious = (url.includes('buy') && url.includes('free')) || (url.includes('win') && url.includes('now'));
   
   let riskLevel: 'scam' | 'suspicious' | 'safe' = 'safe';
   let justification = "This URL appears to be secure as it uses HTTPS.";
@@ -16,16 +17,17 @@ export const mockUrlCheck = (url: string): ScamResult => {
   if (isScam) {
     riskLevel = 'scam';
     justification = "This URL contains known phishing patterns and has been flagged as malicious.";
-  } else if (isUsingHttp) {
-    // HTTP usage is treated as suspicious
+  } else if (isUsingHttp && (isVerySuspicious || url.includes('bank'))) {
+    // Only flag HTTP as suspicious if it also contains other suspicious elements
     riskLevel = 'suspicious';
-    justification = "This URL uses HTTP instead of HTTPS. HTTP connections are not secure and can be intercepted.";
+    justification = "This URL uses HTTP instead of HTTPS and contains suspicious keywords. HTTP connections are not secure and can be intercepted.";
   } else if (isVerySuspicious) {
     riskLevel = 'suspicious';
     justification = "This URL contains highly suspicious keywords often associated with phishing attempts. Exercise extreme caution.";
-  } else if (isSuspicious) {
+  } else if (isSuspicious && isUsingHttp) {
+    // Only consider it suspicious if multiple indicators are present
     riskLevel = 'suspicious';
-    justification = "This URL contains suspicious keywords often associated with scams. Proceed with caution.";
+    justification = "This URL contains suspicious keywords and uses insecure HTTP. Proceed with caution.";
   }
   
   return {
@@ -34,7 +36,7 @@ export const mockUrlCheck = (url: string): ScamResult => {
     detectedLanguage: 'en',
     originalContent: url,
     timestamp: new Date().toISOString(),
-    confidenceLevel: isScam || isUsingHttp ? 'high' : isSuspicious || isVerySuspicious ? 'medium' : 'high'
+    confidenceLevel: isScam ? 'high' : isVerySuspicious ? 'high' : isSuspicious ? 'medium' : 'high'
   };
 };
 
@@ -42,29 +44,37 @@ export const mockTextCheck = (text: string, language?: Language): ScamResult => 
   // Always use the detectTextLanguage function from utils to detect the language
   const detectedLanguage = detectTextLanguage(text);
   
-  // Simple mock logic for demo purposes - only used as fallback now
-  const isScam = text.toLowerCase().includes('password') || 
-                text.toLowerCase().includes('credit card') || 
-                text.toLowerCase().includes('urgently') ||
-                text.toLowerCase().includes('contraseña') || 
-                text.toLowerCase().includes('mot de passe') ||
-                text.toLowerCase().includes('passwort');
+  // More strict criteria for flagging content - requiring combinations of suspicious elements
+  const hasPasswordRequest = text.toLowerCase().includes('password') || 
+                            text.toLowerCase().includes('contraseña') || 
+                            text.toLowerCase().includes('mot de passe') ||
+                            text.toLowerCase().includes('passwort');
   
-  // Additional highly suspicious keywords              
-  const isVerySuspicious = text.toLowerCase().includes('verify account') ||
-                         text.toLowerCase().includes('suspicious activity') ||
-                         text.toLowerCase().includes('limited access') ||
-                         text.toLowerCase().includes('bestätigen sie ihr konto') || 
-                         text.toLowerCase().includes('verdächtige aktivität') ||
-                         text.toLowerCase().includes('verifique su cuenta') ||
-                         text.toLowerCase().includes('vérifier votre compte');
+  const hasCreditCardRequest = text.toLowerCase().includes('credit card') || 
+                              text.toLowerCase().includes('tarjeta de crédito') ||
+                              text.toLowerCase().includes('carte de crédit') ||
+                              text.toLowerCase().includes('kreditkarte');
+  
+  const hasUrgency = text.toLowerCase().includes('urgently') ||
+                    text.toLowerCase().includes('urgent') ||
+                    text.toLowerCase().includes('urgente') ||
+                    text.toLowerCase().includes('dringend');
+  
+  // Combined checks for more accurate classification
+  const isScam = (hasPasswordRequest || hasCreditCardRequest) && hasUrgency;
+              
+  const isVerySuspicious = (text.toLowerCase().includes('verify account') && text.toLowerCase().includes('click')) ||
+                         (text.toLowerCase().includes('suspicious activity') && text.toLowerCase().includes('login')) ||
+                         (text.toLowerCase().includes('limited access') && hasUrgency) ||
+                         (text.toLowerCase().includes('bestätigen sie ihr konto') && text.toLowerCase().includes('klicken')) || 
+                         (text.toLowerCase().includes('verdächtige aktivität') && text.toLowerCase().includes('anmelden')) ||
+                         (text.toLowerCase().includes('verifique su cuenta') && text.toLowerCase().includes('clic')) ||
+                         (text.toLowerCase().includes('vérifier votre compte') && text.toLowerCase().includes('cliquez'));
                 
-  const isSuspicious = text.toLowerCase().includes('money') || 
-                      text.toLowerCase().includes('bank') || 
-                      text.toLowerCase().includes('click') ||
-                      text.toLowerCase().includes('dinero') ||
-                      text.toLowerCase().includes('argent') ||
-                      text.toLowerCase().includes('geld');
+  const isSuspicious = (text.toLowerCase().includes('money') && text.toLowerCase().includes('bank') && text.toLowerCase().includes('click')) ||
+                      (text.toLowerCase().includes('dinero') && text.toLowerCase().includes('banco') && text.toLowerCase().includes('clic')) ||
+                      (text.toLowerCase().includes('argent') && text.toLowerCase().includes('banque') && text.toLowerCase().includes('cliquez')) ||
+                      (text.toLowerCase().includes('geld') && text.toLowerCase().includes('bank') && text.toLowerCase().includes('klicken'));
   
   let riskLevel: 'scam' | 'suspicious' | 'safe' = 'safe';
   
