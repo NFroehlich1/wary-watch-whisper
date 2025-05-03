@@ -17,10 +17,10 @@ serve(async (req) => {
   }
 
   try {
-    // Use the hardcoded API key directly - since we're having issues with environment variables
-    const apiKey = "AIzaSyCxenWK2mcYIquGRi37KZrZXLo9duWHt3Q"; // Directly using the provided API key
+    // Use the new API key directly
+    const apiKey = "AIzaSyDnA7pvt82LP2fdzSFj6PgU1GA_cFvuoXM"; // Using the provided API key
     
-    console.log("Starting secure-gemini function with direct API key");
+    console.log("Starting secure-gemini function with updated API key");
     
     if (!apiKey) {
       console.error("API key is missing");
