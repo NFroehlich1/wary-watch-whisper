@@ -17,13 +17,10 @@ serve(async (req) => {
   }
 
   try {
-    // Get the API key from environment variables or use the hardcoded one
-    const envApiKey = Deno.env.get("GEMINI_API_KEY");
-    // Fallback to hardcoded API key if environment variable is not set
-    const apiKey = envApiKey || "AIzaSyDnA7pvt82LP2fdzSFj6PgU1GA_cFvuoXM";
+    // Get the API key only from environment variables
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
     
     console.log("Starting secure-gemini function");
-    console.log(`API key source: ${envApiKey ? 'environment variable' : 'hardcoded'}`);
     
     if (!apiKey) {
       console.error("API key is missing");
@@ -73,7 +70,7 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey, // Changed from 'Authorization': `Bearer ${apiKey}` to match Google API requirements
+        'x-goog-api-key': apiKey,
       },
       body: JSON.stringify({
         contents: [{
@@ -144,3 +141,4 @@ serve(async (req) => {
     );
   }
 });
+

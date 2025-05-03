@@ -23,7 +23,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
   const [result, setResult] = useState<ScamResult | null>(null);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [geminiOptions, setGeminiOptionsState] = useState<GeminiOptions>({
-    apiKey: '', // Removed hardcoded key
+    apiKey: '',
     enabled: true
   });
   
