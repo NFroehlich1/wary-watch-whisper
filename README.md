@@ -40,10 +40,6 @@ It analyzes:
 
 and returns a detailed, transparent assessment of potential threats.
 
-<p align="center">
-  <img src="screenshot.png" alt="ScamShield screenshot" width="700"/>
-</p>
-
 ---
 
 ## ✨ Features <a name="features"></a>
