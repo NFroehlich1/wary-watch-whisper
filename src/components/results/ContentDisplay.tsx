@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
 
 interface ContentDisplayProps {
   content: string;
@@ -7,11 +8,18 @@ interface ContentDisplayProps {
 
 const ContentDisplay: React.FC<ContentDisplayProps> = ({ content }) => {
   return (
-    <div>
-      <h4 className="font-medium text-sm text-muted-foreground mb-1">Original Content:</h4>
-      <p className="text-sm bg-muted p-3 rounded-md whitespace-pre-wrap max-h-32 overflow-auto">
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <h4 className="font-medium text-sm text-muted-foreground">Original Content:</h4>
+        <div className="flex items-center text-xs text-amber-600">
+          <AlertCircle className="h-3 w-3 mr-1" />
+          <span>Analysis is for guidance only and may occasionally flag safe content</span>
+        </div>
+      </div>
+      
+      <div className="text-sm bg-muted p-3 rounded-md whitespace-pre-wrap max-h-48 overflow-auto border border-muted">
         {content}
-      </p>
+      </div>
     </div>
   );
 };
