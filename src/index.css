@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -97,5 +98,41 @@
 
   body {
     @apply bg-background text-foreground;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Improve readability on mobile */
+  html {
+    -webkit-text-size-adjust: 100%;
+    font-size: 16px;
+  }
+
+  /* Better form controls on mobile */
+  input, select, textarea, button {
+    font-size: 16px; /* Prevents zoom on focus in iOS */
+  }
+  
+  /* Responsive text sizing */
+  @media (max-width: 640px) {
+    h1 {
+      @apply text-xl;
+    }
+    h2 {
+      @apply text-lg;
+    }
+    p, li {
+      @apply text-sm;
+    }
+  }
+}
+
+/* Additional responsive utilities */
+@layer components {
+  .responsive-container {
+    @apply px-4 sm:px-6 md:px-8 max-w-7xl mx-auto w-full;
+  }
+  
+  .responsive-padding {
+    @apply py-4 sm:py-6 md:py-8;
   }
 }

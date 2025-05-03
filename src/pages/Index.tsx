@@ -10,7 +10,7 @@ const Index = () => {
     <ScamDetectionProvider>
       <div className="flex flex-col min-h-screen">
         <Header />
-        <main className="container flex-1 py-8">
+        <main className="container flex-1 py-4 sm:py-6 md:py-8 px-2 sm:px-4 md:px-6">
           <ScamDetectionTabs />
         </main>
         <Footer />
