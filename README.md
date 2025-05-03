@@ -40,7 +40,6 @@ ScamShield is a powerful, AI-powered web application designed to protect users f
 
 ### Installation
 
-```bash
 # Clone this repository
 git clone https://github.com/yourusername/scamshield.git
 
