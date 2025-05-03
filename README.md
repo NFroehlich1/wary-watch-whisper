@@ -11,18 +11,20 @@
 ## Table of Contents
 1. [Overview](#overview)  
 2. [Features](#features)  
-3. [Tech Stack](#tech-stack)  
+3. [Architecture](#architecture)
+   1. [Frontend](#frontend)
+   2. [Backend](#backend)
+   3. [Deployment Status](#deployment)
 4. [Getting Started](#getting-started)  
    1. [Prerequisites](#prerequisites)  
    2. [Installation](#installation)  
    3. [Configuration](#configuration)  
 5. [Usage](#usage)  
 6. [API Reference](#api-reference)  
-7. [Backend Structure](#backend)
-8. [Privacy](#privacy)  
-9. [Contributing](#contributing)  
-10. [License](#license)  
-11. [Acknowledgements](#acknowledgements)
+7. [Privacy](#privacy)  
+8. [Contributing](#contributing)  
+9. [License](#license)  
+10. [Acknowledgements](#acknowledgements)
 
 ---
 
@@ -55,29 +57,55 @@ and returns a detailed, transparent assessment of potential threats.
 
 ---
 
-## 🛠️ Tech Stack <a name="tech-stack"></a>
+## 🏗️ Architecture <a name="architecture"></a>
 
-### Front‑end
-* **React 18** + **Vite** (fast dev & HMR)  
-* **TypeScript**  
-* **Tailwind CSS** for styling  
-* **shadcn/ui** components  
-* **React‑Hook‑Form** + **Zod** for form validation  
-* **TanStack Query** for data‑fetching & caching  
-* **React Router** for navigation
+ScamShield uses a modern client-server architecture with a clear separation between frontend and backend components.
 
-### Backend & Infrastructure
-* **Supabase** — Backend-as-a-Service platform
-* **Supabase Edge Functions** — Serverless Deno runtime
-* **Google Gemini API** — Advanced content verification
-* **CORS** — Cross-Origin Resource Sharing protection
-* **Environment Secrets** — Secure API key management
+### Frontend <a name="frontend"></a>
 
-### Integrations
-* **Google Gemini AI API** — advanced content verification  
-* **Web Speech API** — text‑to‑speech / speech‑to‑text  
-* **Sonner** — Toast notifications
-* **TanStack Query** — Data fetching with caching
+The client-side application is built with:
+
+* **React 18** — Component-based UI library with Hooks API
+* **Vite** — Next-generation frontend tooling with HMR and optimized build
+* **TypeScript** — Static type-checking for enhanced code quality
+* **Tailwind CSS** — Utility-first CSS framework
+* **shadcn/ui** — Accessible and customizable component library
+* **React Router** — Declarative routing for React applications
+* **React Hook Form** + **Zod** — Form state management and validation
+* **TanStack Query** — Data fetching, caching, and state synchronization
+* **Sonner** — Toast notifications for user feedback
+
+### Backend <a name="backend"></a>
+
+Server-side operations are handled by:
+
+* **Supabase Platform** — Backend-as-a-Service providing:
+  * **Edge Functions** — Serverless Deno runtime for backend logic
+  * **Secrets Management** — Secure storage for API keys and credentials
+  * **Storage** — File storage capabilities for application assets
+  * **Authentication** — (Prepared but not yet implemented)
+  * **Database** — PostgreSQL database (Prepared but not yet implemented)
+
+* **Edge Functions:**
+  * **secure-gemini** — Proxies requests to Google Gemini AI, protecting API keys
+  * **speech-to-text** — Handles voice transcription processing
+  * **secure-storage** — Manages anonymized analytics data
+
+* **External Services:**
+  * **Google Gemini AI** — Powers the advanced content verification
+  * **Web Speech API** — Provides text-to-speech and speech-to-text capabilities
+
+### Deployment Status <a name="deployment"></a>
+
+| Component | Status | Platform | URL |
+|-----------|--------|----------|-----|
+| **Frontend** | ✅ Live | Vercel | [scamshield.vercel.app](https://scamshield.vercel.app) |
+| **Edge Functions** | ✅ Live | Supabase | Region: us-east-1 |
+| **Database** | 🔄 Prepared | Supabase | - |
+| **Authentication** | 🔄 Prepared | Supabase | - |
+| **Storage** | ✅ Live | Supabase | - |
+
+> **Note:** The application currently operates in a stateless mode, with prepared but not yet implemented database and authentication components.
 
 ---
 
@@ -187,27 +215,13 @@ export async function analyzeUrl(url: string) {
 
 > Further endpoints: `/api/analyze/text`, `/api/analyze/voice` — see `docs/api.md`.
 
----
+### Edge Function Endpoints
 
-## 🖥️ Backend Structure <a name="backend"></a>
-
-### Edge Functions
-
-ScamShield utilizes Supabase Edge Functions for secure, serverless backend operations:
-
-| Function | Purpose | Technology |
-|----------|---------|------------|
-| **secure-gemini** | AI content verification | Deno + Google Gemini API |
-| **speech-to-text** | Voice transcription | Deno + Web Speech API |
-| **secure-storage** | Anonymized analytics | Supabase Storage |
-
-### Security Features
-
-- **API Key Protection**: All API keys are stored securely in Supabase secrets
-- **Request Validation**: Input sanitization and validation before processing
-- **CORS Policies**: Strict cross-origin policies to prevent unauthorized access
-- **Error Handling**: Comprehensive error handling and logging
-- **Rate Limiting**: Protection against abuse through request rate limiting
+| Endpoint | Purpose | Request Format | Response Format |
+|----------|---------|----------------|-----------------|
+| **/secure-gemini** | AI content analysis | `{ content, detectionType, language }` | `{ riskAssessment, explanation, confidenceLevel }` |
+| **/speech-to-text** | Audio transcription | `{ audio }` (base64) | `{ text }` |
+| **/secure-storage** | Analytics storage | `{ eventType, data }` | `{ success, id }` |
 
 ---
 
