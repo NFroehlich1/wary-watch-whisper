@@ -148,6 +148,14 @@ const ResultDisplay = () => {
     }
   };
   
+  // Display the AI verification if available, otherwise fall back to the standard justification
+  const getVerificationText = () => {
+    if (result.aiVerification) {
+      return result.aiVerification;
+    }
+    return result.justification;
+  };
+  
   return (
     <Card className="mt-6">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -169,16 +177,9 @@ const ResultDisplay = () => {
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
         <div>
-          <h4 className="font-medium text-sm text-muted-foreground mb-1">Justification:</h4>
-          <p className="text-base">{result.justification}</p>
+          <h4 className="font-medium text-sm text-muted-foreground mb-1">Analysis:</h4>
+          <p className="text-base">{getVerificationText()}</p>
         </div>
-        
-        {result.aiVerification && (
-          <div>
-            <h4 className="font-medium text-sm text-muted-foreground mb-1">AI Verification (English):</h4>
-            <p className="text-base">{result.aiVerification}</p>
-          </div>
-        )}
         
         <div>
           <h4 className="font-medium text-sm text-muted-foreground mb-1">Detected Language:</h4>
