@@ -1,130 +1,17 @@
 
-import { Language, RiskLevel } from "../types";
-import { supabase } from "../integrations/supabase/client";
+/**
+ * Haupt-Module für Gemini AI Integration
+ * Reexportiert Funktionen aus spezialisierten Modulen
+ */
+import { verifyWithGemini } from './gemini-client';
+import { getUrlPromptInEnglish, getTextPromptInEnglish, getUrlPrompt, getTextPrompt } from './prompt-builder';
+import { extractRiskAssessment, extractExplanation } from './response-parser';
 
-export const verifyWithGemini = async (content: string, detectionType: 'url' | 'text', language: Language): Promise<{
-  riskAssessment: RiskLevel;
-  explanation: string;
-  confidenceLevel?: 'high' | 'medium' | 'low';
-}> => {
-  try {
-    // Call the secure Supabase Edge Function instead of the Gemini API directly
-    const { data, error } = await supabase.functions.invoke('secure-gemini', {
-      body: { content, detectionType, language }
-    });
-    
-    if (error) {
-      console.error('Error calling secure-gemini function:', error);
-      throw new Error(`Failed to verify content: ${error.message}`);
-    }
-    
-    return {
-      riskAssessment: data.riskAssessment,
-      explanation: data.explanation,
-      confidenceLevel: data.confidenceLevel
-    };
-  } catch (error) {
-    console.error('Error verifying with secure Gemini function:', error);
-    return {
-      riskAssessment: 'suspicious',
-      explanation: 'Could not verify with Gemini AI. Defaulting to suspicious.',
-      confidenceLevel: 'low'
-    };
-  }
-};
+// Exportiere die Haupt-Client-Funktion
+export { verifyWithGemini };
 
-// Always request responses in English regardless of input language
-const getUrlPromptInEnglish = (url: string): string => {
-  return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". 
-  Please respond with a structured answer starting with one of these exact classifications:
-  - CLASSIFICATION: SAFE if you're highly confident it's legitimate
-  - CLASSIFICATION: SUSPICIOUS if there are minor concerns but not definitively malicious
-  - CLASSIFICATION: HIGH SUSPICION if there are significant red flags but not 100% certain
-  - CLASSIFICATION: SCAM if you're highly confident it's malicious
-  
-  Then provide a brief justification in English.`;
-};
+// Exportiere Prompt-Builder-Funktionen
+export { getUrlPromptInEnglish, getTextPromptInEnglish, getUrlPrompt, getTextPrompt };
 
-const getTextPromptInEnglish = (text: string): string => {
-  return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". 
-  Please respond with a structured answer starting with one of these exact classifications:
-  - CLASSIFICATION: SAFE if you're highly confident it's legitimate
-  - CLASSIFICATION: SUSPICIOUS if there are minor concerns but not definitively malicious
-  - CLASSIFICATION: HIGH SUSPICION if there are significant red flags but not 100% certain
-  - CLASSIFICATION: SCAM if you're highly confident it's malicious
-  
-  Then provide a brief justification in English.`;
-};
-
-// The below functions are kept for compatibility but will not be used anymore
-const getUrlPrompt = (url: string, language: Language): string => {
-  if (language === 'es') {
-    return `Analiza si esta URL es segura, sospechosa o una estafa. URL: "${url}". Por favor, clasifícala como "safe", "suspicious" o "scam" y proporciona una breve justificación.`;
-  } else if (language === 'fr') {
-    return `Analysez si cette URL est sûre, suspecte ou une arnaque. URL: "${url}". Veuillez la classer comme "safe", "suspicious" ou "scam" et fournir une brève justification.`;
-  } else if (language === 'de') {
-    return `Analysieren Sie, ob diese URL sicher, verdächtig oder betrügerisch ist. URL: "${url}". Bitte klassifizieren Sie sie als "safe", "suspicious" oder "scam" und geben Sie eine kurze Begründung an.`;
-  } else {
-    return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification.`;
-  }
-};
-
-const getTextPrompt = (text: string, language: Language): string => {
-  if (language === 'es') {
-    return `Analiza si este mensaje contiene indicios de estafa, contenido sospechoso o si es seguro. Mensaje: "${text}". Por favor, clasifícalo como "safe", "suspicious" o "scam" y proporciona una breve justificación.`;
-  } else if (language === 'fr') {
-    return `Analysez si ce message contient des signes d'arnaque, un contenu suspect ou s'il est sûr. Message: "${text}". Veuillez le classer comme "safe", "suspicious" ou "scam" et fournir une brève justification.`;
-  } else if (language === 'de') {
-    return `Analysieren Sie, ob diese Nachricht Anzeichen für Betrug enthält, verdächtigen Inhalt oder ob sie sicher ist. Nachricht: "${text}". Bitte klassifizieren Sie sie als "safe", "suspicious" oder "scam" und geben Sie eine kurze Begründung an.`;
-  } else {
-    return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification.`;
-  }
-};
-
-const extractRiskAssessment = (aiResponse: string): { riskLevel: RiskLevel, confidenceLevel?: 'high' | 'medium' | 'low' } => {
-  const lowerResponse = aiResponse.toLowerCase();
-  
-  if (lowerResponse.includes('classification: scam')) {
-    return { riskLevel: 'scam', confidenceLevel: 'high' };
-  } else if (lowerResponse.includes('classification: high suspicion')) {
-    return { riskLevel: 'suspicious', confidenceLevel: 'high' };
-  } else if (lowerResponse.includes('classification: suspicious')) {
-    return { riskLevel: 'suspicious', confidenceLevel: 'medium' };
-  } else if (lowerResponse.includes('classification: safe')) {
-    return { riskLevel: 'safe', confidenceLevel: 'high' };
-  }
-  
-  // Default fallback using older detection method
-  if (lowerResponse.includes('scam')) {
-    return { riskLevel: 'scam' };
-  } else if (lowerResponse.includes('suspicious') || lowerResponse.includes('caution')) {
-    return { riskLevel: 'suspicious' };
-  } else if (lowerResponse.includes('safe')) {
-    return { riskLevel: 'safe' };
-  }
-  
-  // Ultimate fallback
-  return { riskLevel: 'suspicious', confidenceLevel: 'low' };
-};
-
-const extractExplanation = (aiResponse: string): string => {
-  // First try to remove the classification header
-  const classificationMatch = aiResponse.match(/CLASSIFICATION: (SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i);
-  
-  if (classificationMatch) {
-    // Get everything after the classification
-    const explanationPart = aiResponse.substring(aiResponse.indexOf(classificationMatch[0]) + classificationMatch[0].length).trim();
-    if (explanationPart) {
-      return explanationPart;
-    }
-  }
-  
-  // Fallback to the original extraction method
-  const lines = aiResponse.split('\n').filter(line => line.trim());
-  
-  if (lines.length > 1) {
-    return lines.slice(1).join(' ').trim();
-  }
-  
-  return aiResponse;
-};
+// Exportiere Response-Parser-Funktionen
+export { extractRiskAssessment, extractExplanation };
