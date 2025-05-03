@@ -1,12 +1,13 @@
 
 import { ScamResult, GeminiOptions } from '../types';
+import { supabase } from "../integrations/supabase/client";
 
 export const askAnalysisQuestion = async (
   question: string, 
   result: ScamResult, 
   geminiOptions: GeminiOptions
 ): Promise<string> => {
-  if (!geminiOptions.enabled || !geminiOptions.apiKey) {
+  if (!geminiOptions.enabled) {
     return "AI analysis is not enabled. Enable it in settings to ask questions about the analysis.";
   }
   
@@ -31,30 +32,21 @@ export const askAnalysisQuestion = async (
       7. If asked about anything unrelated to fraud detection, scams, or this specific analysis, politely explain you can only discuss this specific analysis
     `;
     
-    // Call the Gemini API with the prompt
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiOptions.apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }]
-      })
+    // Call our secure Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke('secure-gemini', {
+      body: {
+        content: prompt,
+        detectionType: 'text',
+        language: 'en'
+      }
     });
     
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`);
+    if (error) {
+      throw new Error(`Failed to get analysis answer: ${error.message}`);
     }
     
-    const data = await response.json();
-    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 
-                    "I couldn't generate an answer to your question.";
-    
-    return answer;
+    // Extract the explanation as the answer to the question
+    return data.explanation || "I couldn't generate an answer to your question.";
   } catch (error) {
     console.error("Error asking analysis question:", error);
     return "I couldn't answer this question at the moment. Please try again later.";

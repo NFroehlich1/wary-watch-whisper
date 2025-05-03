@@ -1,61 +1,33 @@
 import { Language, RiskLevel } from "../types";
+import { supabase } from "../integrations/supabase/client";
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-
-export const verifyWithGemini = async (content: string, detectionType: 'url' | 'text', language: Language, apiKey: string): Promise<{
+export const verifyWithGemini = async (content: string, detectionType: 'url' | 'text', language: Language, apiKey?: string): Promise<{
   riskAssessment: RiskLevel;
   explanation: string;
   confidenceLevel?: 'high' | 'medium' | 'low';
 }> => {
   try {
-    // Always use English prompt regardless of the detected language
-    let prompt = "";
-    if (detectionType === 'url') {
-      prompt = getUrlPromptInEnglish(content);
-    } else {
-      prompt = getTextPromptInEnglish(content);
-    }
-
-    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }]
-      })
+    // Call the secure Supabase Edge Function instead of the Gemini API directly
+    const { data, error } = await supabase.functions.invoke('secure-gemini', {
+      body: { content, detectionType, language }
     });
-
-    if (!response.ok) {
-      console.error('Gemini API error:', response.statusText);
-      throw new Error(`Gemini API error: ${response.statusText}`);
+    
+    if (error) {
+      console.error('Error calling secure-gemini function:', error);
+      throw new Error(`Failed to verify content: ${error.message}`);
     }
-
-    const data = await response.json();
     
-    // Parse the response and extract the risk assessment and explanation
-    const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    // Extract risk level and confidence from the response
-    const riskAssessmentInfo = extractRiskAssessment(aiResponse);
-    
-    // Get explanation
-    const explanation = extractExplanation(aiResponse);
-
     return {
-      riskAssessment: riskAssessmentInfo.riskLevel,
-      explanation: explanation,
-      confidenceLevel: riskAssessmentInfo.confidenceLevel
+      riskAssessment: data.riskAssessment,
+      explanation: data.explanation,
+      confidenceLevel: data.confidenceLevel
     };
   } catch (error) {
-    console.error('Error verifying with Gemini:', error);
+    console.error('Error verifying with secure Gemini function:', error);
     return {
       riskAssessment: 'suspicious',
-      explanation: 'Could not verify with Gemini AI. Defaulting to suspicious.'
+      explanation: 'Could not verify with Gemini AI. Defaulting to suspicious.',
+      confidenceLevel: 'low'
     };
   }
 };
