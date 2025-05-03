@@ -69,6 +69,8 @@ const getUrlPrompt = (url: string, language: Language): string => {
     return `Analiza si esta URL es segura, sospechosa o una estafa. URL: "${url}". Por favor, clasifícala como "safe", "suspicious" o "scam" y proporciona una breve justificación.`;
   } else if (language === 'fr') {
     return `Analysez si cette URL est sûre, suspecte ou une arnaque. URL: "${url}". Veuillez la classer comme "safe", "suspicious" ou "scam" et fournir une brève justification.`;
+  } else if (language === 'de') {
+    return `Analysieren Sie, ob diese URL sicher, verdächtig oder betrügerisch ist. URL: "${url}". Bitte klassifizieren Sie sie als "safe", "suspicious" oder "scam" und geben Sie eine kurze Begründung an.`;
   } else {
     return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification.`;
   }
@@ -79,6 +81,8 @@ const getTextPrompt = (text: string, language: Language): string => {
     return `Analiza si este mensaje contiene indicios de estafa, contenido sospechoso o si es seguro. Mensaje: "${text}". Por favor, clasifícalo como "safe", "suspicious" o "scam" y proporciona una breve justificación.`;
   } else if (language === 'fr') {
     return `Analysez si ce message contient des signes d'arnaque, un contenu suspect ou s'il est sûr. Message: "${text}". Veuillez le classer comme "safe", "suspicious" ou "scam" et fournir une brève justification.`;
+  } else if (language === 'de') {
+    return `Analysieren Sie, ob diese Nachricht Anzeichen für Betrug enthält, verdächtigen Inhalt oder ob sie sicher ist. Nachricht: "${text}". Bitte klassifizieren Sie sie als "safe", "suspicious" oder "scam" und geben Sie eine kurze Begründung an.`;
   } else {
     return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification.`;
   }

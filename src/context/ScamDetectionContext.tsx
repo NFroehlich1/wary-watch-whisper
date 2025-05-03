@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { ScamResult, DetectionType, Language, GeminiOptions } from '../types';
 import { verifyWithGemini } from '../utils/gemini';
+import { detectTextLanguage } from '../utils/language';
 
 interface ScamDetectionContextType {
   loading: boolean;
@@ -107,19 +109,23 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
   };
   
   const mockTextCheck = (text: string, language?: Language): ScamResult => {
+    // Always use the detectTextLanguage function from utils to detect the language
+    const detectedLanguage = detectTextLanguage(text);
+    
     // Simple mock logic for demo purposes
-    const detectedLanguage = detectLanguage(text, language);
     const isScam = text.toLowerCase().includes('password') || 
                   text.toLowerCase().includes('credit card') || 
                   text.toLowerCase().includes('urgently') ||
                   text.toLowerCase().includes('contraseña') || 
-                  text.toLowerCase().includes('mot de passe');
+                  text.toLowerCase().includes('mot de passe') ||
+                  text.toLowerCase().includes('passwort');
                   
     const isSuspicious = text.toLowerCase().includes('money') || 
                         text.toLowerCase().includes('bank') || 
                         text.toLowerCase().includes('click') ||
                         text.toLowerCase().includes('dinero') ||
-                        text.toLowerCase().includes('argent');
+                        text.toLowerCase().includes('argent') ||
+                        text.toLowerCase().includes('geld');
     
     return {
       riskLevel: isScam ? 'scam' : (isSuspicious ? 'suspicious' : 'safe'),
@@ -142,7 +148,8 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
     };
   };
   
-  const detectLanguage = (text: string, preferredLanguage?: Language): Language => {
+  // We don't need this function anymore as we're using the utility function
+  /* const detectLanguage = (text: string, preferredLanguage?: Language): Language => {
     if (preferredLanguage) return preferredLanguage;
     
     // Very simple language detection for demo purposes
@@ -150,7 +157,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
     if (text.match(/[áéíóúñ¿¡]/i)) return 'es';
     if (text.match(/[àâçéèêëîïôùûüÿœæ]/i)) return 'fr';
     return 'en';
-  };
+  }; */
   
   const getJustification = (isScam: boolean, isSuspicious: boolean, language: Language): string => {
     if (language === 'es') {
@@ -161,6 +168,10 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
       if (isScam) return "Ce message demande des informations personnelles sensibles, ce qui est une tactique d'arnaque courante.";
       if (isSuspicious) return "Ce message contient des mots-clés suspects. Procédez avec prudence.";
       return "Ce message semble sécurisé selon notre analyse.";
+    } else if (language === 'de') {
+      if (isScam) return "Diese Nachricht fordert sensible persönliche Informationen an, was eine übliche Betrugsmasche ist.";
+      if (isSuspicious) return "Diese Nachricht enthält verdächtige Schlüsselwörter. Bitte seien Sie vorsichtig.";
+      return "Diese Nachricht scheint laut unserer Analyse sicher zu sein.";
     } else {
       if (isScam) return "This message requests sensitive personal information, which is a common scam tactic.";
       if (isSuspicious) return "This message contains suspicious keywords. Proceed with caution.";
@@ -189,6 +200,9 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
       case 'fr':
         speech.lang = 'fr-FR';
         break;
+      case 'de':
+        speech.lang = 'de-DE';
+        break;
       default:
         speech.lang = 'en-US';
     }
@@ -208,6 +222,10 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
       if (riskLevel === 'scam') return "Arnaque détectée";
       if (riskLevel === 'suspicious') return "Contenu suspect";
       return "Contenu sécurisé";
+    } else if (language === 'de') {
+      if (riskLevel === 'scam') return "Betrug erkannt";
+      if (riskLevel === 'suspicious') return "Verdächtiger Inhalt";
+      return "Sicherer Inhalt";
     } else {
       if (riskLevel === 'scam') return "Scam detected";
       if (riskLevel === 'suspicious') return "Suspicious content";

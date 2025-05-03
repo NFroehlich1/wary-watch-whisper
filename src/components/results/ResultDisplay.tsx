@@ -48,6 +48,8 @@ const ResultDisplay = () => {
         return 'Spanish';
       case 'fr':
         return 'French';
+      case 'de':
+        return 'German';
       default:
         return 'Unknown';
     }
