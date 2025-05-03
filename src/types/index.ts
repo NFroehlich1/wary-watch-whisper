@@ -12,6 +12,7 @@ export type ScamResult = {
   originalContent: string;
   timestamp: string;
   aiVerification?: string; // Additional verification from Gemini AI
+  confidenceLevel?: 'high' | 'medium' | 'low'; // New field to track AI confidence
 };
 
 export type GeminiOptions = {

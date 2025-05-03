@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useScamDetection } from '@/context/ScamDetectionContext';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, Shield, ShieldAlert, ShieldX } from 'lucide-react';
 
 const ResultDisplay = () => {
   const { result, playAudio, audioPlaying } = useScamDetection();
@@ -17,11 +16,8 @@ const ResultDisplay = () => {
       case 'scam':
         return 'bg-status-scam';
       case 'suspicious':
-        // Let's check if this is a high suspicion case based on keywords in justification
-        return result.justification.toLowerCase().includes('extreme caution') || 
-               result.justification.toLowerCase().includes('äußerst vorsichtig') || 
-               result.justification.toLowerCase().includes('very suspicious') || 
-               result.justification.toLowerCase().includes('highly suspicious')
+        // Check if this is a high suspicion case based on confidence level
+        return result.confidenceLevel === 'high'
                 ? 'bg-amber-600' // darker orange/amber for higher suspicion
                 : 'bg-status-suspicious'; // regular orange
       case 'safe':
@@ -33,12 +29,8 @@ const ResultDisplay = () => {
   
   // Helper function to get risk level text
   const getRiskLevelText = () => {
-    // Check if it's a higher level of suspicious
-    if (result.riskLevel === 'suspicious' && 
-        (result.justification.toLowerCase().includes('extreme caution') || 
-         result.justification.toLowerCase().includes('äußerst vorsichtig') ||
-         result.justification.toLowerCase().includes('very suspicious') ||
-         result.justification.toLowerCase().includes('highly suspicious'))) {
+    // Determine if it's a higher level of suspicious based on confidence
+    if (result.riskLevel === 'suspicious' && result.confidenceLevel === 'high') {
       return 'HIGH SUSPICION';
     }
     
@@ -51,6 +43,19 @@ const ResultDisplay = () => {
         return 'SAFE';
       default:
         return 'UNKNOWN';
+    }
+  };
+  
+  // Helper function to get appropriate icon based on risk level
+  const getStatusIcon = () => {
+    if (result.riskLevel === 'scam') {
+      return <ShieldX className="h-4 w-4 mr-1" />;
+    } else if (result.riskLevel === 'suspicious') {
+      return result.confidenceLevel === 'high' 
+        ? <ShieldAlert className="h-4 w-4 mr-1" />
+        : <Shield className="h-4 w-4 mr-1" />;
+    } else {
+      return <Shield className="h-4 w-4 mr-1" />;
     }
   };
   
@@ -80,7 +85,8 @@ const ResultDisplay = () => {
           </CardDescription>
         </div>
         <div className="flex items-center space-x-2">
-          <Badge className={`${getStatusColor()} text-white font-bold`}>
+          <Badge className={`${getStatusColor()} text-white font-bold flex items-center`}>
+            {getStatusIcon()}
             {getRiskLevelText()}
           </Badge>
         </div>

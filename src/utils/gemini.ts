@@ -1,4 +1,3 @@
-
 import { Language, RiskLevel } from "../types";
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
@@ -6,6 +5,7 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/
 export const verifyWithGemini = async (content: string, detectionType: 'url' | 'text', language: Language, apiKey: string): Promise<{
   riskAssessment: RiskLevel;
   explanation: string;
+  confidenceLevel?: 'high' | 'medium' | 'low';
 }> => {
   try {
     // Always use English prompt regardless of the detected language
@@ -40,20 +40,16 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
     // Parse the response and extract the risk assessment and explanation
     const aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    // Extract risk level from the response
-    let riskAssessment: RiskLevel = 'suspicious'; // Default
-    if (aiResponse.toLowerCase().includes('safe')) {
-      riskAssessment = 'safe';
-    } else if (aiResponse.toLowerCase().includes('scam')) {
-      riskAssessment = 'scam';
-    }
+    // Extract risk level and confidence from the response
+    const riskAssessmentInfo = extractRiskAssessment(aiResponse);
     
     // Get explanation
     const explanation = extractExplanation(aiResponse);
 
     return {
-      riskAssessment,
-      explanation
+      riskAssessment: riskAssessmentInfo.riskLevel,
+      explanation: explanation,
+      confidenceLevel: riskAssessmentInfo.confidenceLevel
     };
   } catch (error) {
     console.error('Error verifying with Gemini:', error);
@@ -66,11 +62,25 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
 
 // Always request responses in English regardless of input language
 const getUrlPromptInEnglish = (url: string): string => {
-  return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification in English. If it's suspicious but has very concerning elements, mention "highly suspicious" or use phrases like "exercise extreme caution" in your explanation.`;
+  return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". 
+  Please respond with a structured answer starting with one of these exact classifications:
+  - CLASSIFICATION: SAFE if you're highly confident it's legitimate
+  - CLASSIFICATION: SUSPICIOUS if there are minor concerns but not definitively malicious
+  - CLASSIFICATION: HIGH SUSPICION if there are significant red flags but not 100% certain
+  - CLASSIFICATION: SCAM if you're highly confident it's malicious
+  
+  Then provide a brief justification in English.`;
 };
 
 const getTextPromptInEnglish = (text: string): string => {
-  return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification in English. If it's suspicious but has very concerning elements, mention "highly suspicious" or use phrases like "exercise extreme caution" in your explanation.`;
+  return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". 
+  Please respond with a structured answer starting with one of these exact classifications:
+  - CLASSIFICATION: SAFE if you're highly confident it's legitimate
+  - CLASSIFICATION: SUSPICIOUS if there are minor concerns but not definitively malicious
+  - CLASSIFICATION: HIGH SUSPICION if there are significant red flags but not 100% certain
+  - CLASSIFICATION: SCAM if you're highly confident it's malicious
+  
+  Then provide a brief justification in English.`;
 };
 
 // The below functions are kept for compatibility but will not be used anymore
@@ -98,9 +108,45 @@ const getTextPrompt = (text: string, language: Language): string => {
   }
 };
 
+const extractRiskAssessment = (aiResponse: string): { riskLevel: RiskLevel, confidenceLevel?: 'high' | 'medium' | 'low' } => {
+  const lowerResponse = aiResponse.toLowerCase();
+  
+  if (lowerResponse.includes('classification: scam')) {
+    return { riskLevel: 'scam', confidenceLevel: 'high' };
+  } else if (lowerResponse.includes('classification: high suspicion')) {
+    return { riskLevel: 'suspicious', confidenceLevel: 'high' };
+  } else if (lowerResponse.includes('classification: suspicious')) {
+    return { riskLevel: 'suspicious', confidenceLevel: 'medium' };
+  } else if (lowerResponse.includes('classification: safe')) {
+    return { riskLevel: 'safe', confidenceLevel: 'high' };
+  }
+  
+  // Default fallback using older detection method
+  if (lowerResponse.includes('scam')) {
+    return { riskLevel: 'scam' };
+  } else if (lowerResponse.includes('suspicious') || lowerResponse.includes('caution')) {
+    return { riskLevel: 'suspicious' };
+  } else if (lowerResponse.includes('safe')) {
+    return { riskLevel: 'safe' };
+  }
+  
+  // Ultimate fallback
+  return { riskLevel: 'suspicious', confidenceLevel: 'low' };
+};
+
 const extractExplanation = (aiResponse: string): string => {
-  // Extract the explanation part from the AI response
-  // This is a simple implementation, might need adjustment based on actual responses
+  // First try to remove the classification header
+  const classificationMatch = aiResponse.match(/CLASSIFICATION: (SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i);
+  
+  if (classificationMatch) {
+    // Get everything after the classification
+    const explanationPart = aiResponse.substring(aiResponse.indexOf(classificationMatch[0]) + classificationMatch[0].length).trim();
+    if (explanationPart) {
+      return explanationPart;
+    }
+  }
+  
+  // Fallback to the original extraction method
   const lines = aiResponse.split('\n').filter(line => line.trim());
   
   if (lines.length > 1) {

@@ -45,7 +45,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Mock detection logic
+      // Initialize with default results in case AI analysis fails
       let detectedRisk: ScamResult;
       
       if (type === 'url') {
@@ -56,7 +56,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
         detectedRisk = mockVoiceCheck();
       }
       
-      // Add Gemini AI verification if enabled
+      // If Gemini is enabled and it's a text or URL check, use it as the primary classifier
       if (geminiOptions.enabled && geminiOptions.apiKey && (type === 'url' || type === 'text')) {
         try {
           const contentToVerify = content as string;
@@ -67,16 +67,15 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
             geminiOptions.apiKey
           );
           
-          // Add Gemini's assessment to the result
-          detectedRisk.aiVerification = `Gemini AI: ${geminiResult.explanation}`;
-          
-          // In case of disagreement between our mock check and Gemini, make the result more suspicious
-          if (geminiResult.riskAssessment === 'scam' && detectedRisk.riskLevel !== 'scam') {
-            detectedRisk.riskLevel = 'suspicious';
-            detectedRisk.justification += ' However, additional AI analysis found potential scam patterns.';
-          }
+          // Use Gemini's assessment as the primary source of truth
+          detectedRisk.riskLevel = geminiResult.riskAssessment;
+          detectedRisk.confidenceLevel = geminiResult.confidenceLevel;
+          detectedRisk.justification = geminiResult.explanation;
+          detectedRisk.aiVerification = `Gemini AI analyzed this content as ${geminiResult.riskAssessment.toUpperCase()}${geminiResult.confidenceLevel ? ` (${geminiResult.confidenceLevel} confidence)` : ''}: ${geminiResult.explanation}`;
         } catch (error) {
           console.error('Gemini verification error:', error);
+          // If AI analysis fails, we'll fall back to the mock results
+          detectedRisk.aiVerification = "Gemini AI analysis failed. Using built-in detection instead.";
         }
       }
       
@@ -90,9 +89,8 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
   };
   
   const mockUrlCheck = (url: string): ScamResult => {
-    // Simple mock logic for demo purposes
+    // Simple mock logic for demo purposes - only used as fallback now
     const isScam = url.includes('scam') || url.includes('phish');
-    // Added more suspicious indicators
     const isVerySuspicious = url.includes('verify') || url.includes('confirm') || url.includes('login');
     const isSuspicious = url.includes('buy') || url.includes('free') || url.includes('win');
     
@@ -115,7 +113,8 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
       justification,
       detectedLanguage: 'en',
       originalContent: url,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      confidenceLevel: isScam || !isSuspicious && !isVerySuspicious ? 'high' : 'medium'
     };
   };
   
@@ -123,7 +122,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
     // Always use the detectTextLanguage function from utils to detect the language
     const detectedLanguage = detectTextLanguage(text);
     
-    // Simple mock logic for demo purposes with additional suspicious category
+    // Simple mock logic for demo purposes - only used as fallback now
     const isScam = text.toLowerCase().includes('password') || 
                   text.toLowerCase().includes('credit card') || 
                   text.toLowerCase().includes('urgently') ||
@@ -162,7 +161,8 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
       justification: getJustification(isScam, isVerySuspicious, isSuspicious, detectedLanguage),
       detectedLanguage,
       originalContent: text,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      confidenceLevel: isScam ? 'high' : isVerySuspicious ? 'high' : isSuspicious ? 'medium' : 'high'
     };
   };
   
@@ -230,27 +230,37 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
         speech.lang = 'en-US';
     }
     
-    speech.text = `${getVerdictText(result.riskLevel, result.detectedLanguage)}. ${result.justification}`;
+    // Generate the appropriate verdict text
+    const verdictText = getVerdictText(result.riskLevel, result.confidenceLevel, result.detectedLanguage);
+    
+    speech.text = `${verdictText}. ${result.justification}`;
     speech.onend = () => setAudioPlaying(false);
     
     window.speechSynthesis.speak(speech);
   };
   
-  const getVerdictText = (riskLevel: string, language: Language): string => {
+  const getVerdictText = (riskLevel: string, confidenceLevel?: string, language?: Language): string => {
+    // Special handling for high suspicion (suspicious with high confidence)
+    const isHighSuspicion = riskLevel === 'suspicious' && confidenceLevel === 'high';
+    
     if (language === 'es') {
       if (riskLevel === 'scam') return "Estafa detectada";
+      if (isHighSuspicion) return "Alto nivel de sospecha";
       if (riskLevel === 'suspicious') return "Contenido sospechoso";
       return "Contenido seguro";
     } else if (language === 'fr') {
       if (riskLevel === 'scam') return "Arnaque détectée";
+      if (isHighSuspicion) return "Niveau élevé de suspicion";
       if (riskLevel === 'suspicious') return "Contenu suspect";
       return "Contenu sécurisé";
     } else if (language === 'de') {
       if (riskLevel === 'scam') return "Betrug erkannt";
+      if (isHighSuspicion) return "Hoher Verdachtsgrad";
       if (riskLevel === 'suspicious') return "Verdächtiger Inhalt";
       return "Sicherer Inhalt";
     } else {
       if (riskLevel === 'scam') return "Scam detected";
+      if (isHighSuspicion) return "High suspicion detected";
       if (riskLevel === 'suspicious') return "Suspicious content";
       return "Safe content";
     }
