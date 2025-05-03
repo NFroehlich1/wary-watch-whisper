@@ -66,11 +66,11 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
 
 // Always request responses in English regardless of input language
 const getUrlPromptInEnglish = (url: string): string => {
-  return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification in English.`;
+  return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification in English. If it's suspicious but has very concerning elements, mention "highly suspicious" or use phrases like "exercise extreme caution" in your explanation.`;
 };
 
 const getTextPromptInEnglish = (text: string): string => {
-  return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification in English.`;
+  return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification in English. If it's suspicious but has very concerning elements, mention "highly suspicious" or use phrases like "exercise extreme caution" in your explanation.`;
 };
 
 // The below functions are kept for compatibility but will not be used anymore

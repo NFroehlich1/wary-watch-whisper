@@ -17,7 +17,13 @@ const ResultDisplay = () => {
       case 'scam':
         return 'bg-status-scam';
       case 'suspicious':
-        return 'bg-status-suspicious';
+        // Let's check if this is a high suspicion case based on keywords in justification
+        return result.justification.toLowerCase().includes('extreme caution') || 
+               result.justification.toLowerCase().includes('äußerst vorsichtig') || 
+               result.justification.toLowerCase().includes('very suspicious') || 
+               result.justification.toLowerCase().includes('highly suspicious')
+                ? 'bg-amber-600' // darker orange/amber for higher suspicion
+                : 'bg-status-suspicious'; // regular orange
       case 'safe':
         return 'bg-status-safe';
       default:
@@ -27,6 +33,15 @@ const ResultDisplay = () => {
   
   // Helper function to get risk level text
   const getRiskLevelText = () => {
+    // Check if it's a higher level of suspicious
+    if (result.riskLevel === 'suspicious' && 
+        (result.justification.toLowerCase().includes('extreme caution') || 
+         result.justification.toLowerCase().includes('äußerst vorsichtig') ||
+         result.justification.toLowerCase().includes('very suspicious') ||
+         result.justification.toLowerCase().includes('highly suspicious'))) {
+      return 'HIGH SUSPICION';
+    }
+    
     switch (result.riskLevel) {
       case 'scam':
         return 'SCAM';
