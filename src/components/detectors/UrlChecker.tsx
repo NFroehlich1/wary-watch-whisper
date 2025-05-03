@@ -21,6 +21,7 @@ const UrlChecker = () => {
     // Check if URL uses HTTP instead of HTTPS and show warning
     if (url.toLowerCase().startsWith('http:')) {
       setShowHttpWarning(true);
+      // We'll still proceed with the check to get AI analysis
     } else {
       setShowHttpWarning(false);
     }
@@ -41,7 +42,7 @@ const UrlChecker = () => {
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Check a Website URL</h2>
         <p className="text-muted-foreground">
-          Verify if a URL is safe, suspicious, or a known scam before visiting.
+          Verify if a URL is secure (HTTPS) or using insecure HTTP protocol.
         </p>
       </div>
       
@@ -64,7 +65,7 @@ const UrlChecker = () => {
           <Alert className="bg-yellow-50 border-yellow-200">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
-              Warning: This URL uses HTTP instead of HTTPS. HTTP connections are not secure and can be intercepted.
+              Security Warning: This URL uses HTTP instead of HTTPS. HTTP connections are not secure and can be intercepted.
             </AlertDescription>
           </Alert>
         )}

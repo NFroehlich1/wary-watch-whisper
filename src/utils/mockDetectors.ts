@@ -1,19 +1,25 @@
-
 import { ScamResult, Language } from '../types';
 import { detectTextLanguage } from './language';
 
 export const mockUrlCheck = (url: string): ScamResult => {
-  // Simple mock logic for demo purposes - only used as fallback now
+  // Primary check: Is the URL using HTTP instead of HTTPS?
+  const isUsingHttp = url.toLowerCase().startsWith('http:') && !url.toLowerCase().startsWith('https:');
+  
+  // Secondary checks for other suspicious patterns
   const isScam = url.includes('scam') || url.includes('phish');
   const isVerySuspicious = url.includes('verify') || url.includes('confirm') || url.includes('login');
   const isSuspicious = url.includes('buy') || url.includes('free') || url.includes('win');
   
   let riskLevel: 'scam' | 'suspicious' | 'safe' = 'safe';
-  let justification = "This URL appears to be safe based on our analysis.";
+  let justification = "This URL appears to be secure as it uses HTTPS.";
   
   if (isScam) {
     riskLevel = 'scam';
     justification = "This URL contains known phishing patterns and has been flagged as malicious.";
+  } else if (isUsingHttp) {
+    // HTTP usage is treated as suspicious
+    riskLevel = 'suspicious';
+    justification = "This URL uses HTTP instead of HTTPS. HTTP connections are not secure and can be intercepted.";
   } else if (isVerySuspicious) {
     riskLevel = 'suspicious';
     justification = "This URL contains highly suspicious keywords often associated with phishing attempts. Exercise extreme caution.";
@@ -28,7 +34,7 @@ export const mockUrlCheck = (url: string): ScamResult => {
     detectedLanguage: 'en',
     originalContent: url,
     timestamp: new Date().toISOString(),
-    confidenceLevel: isScam || !isSuspicious && !isVerySuspicious ? 'high' : 'medium'
+    confidenceLevel: isScam || isUsingHttp ? 'high' : isSuspicious || isVerySuspicious ? 'medium' : 'high'
   };
 };
 
