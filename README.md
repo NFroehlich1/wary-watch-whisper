@@ -66,7 +66,7 @@ To use all features, you'll need to configure your Google Gemini API key:
     Add your key in the application settings
     Enable the Gemini integration for enhanced scam detection
 
-### 🛠️ Tech Stack
+🛠️ Tech Stack
 
 
     Frontend:
@@ -83,7 +83,7 @@ To use all features, you'll need to configure your Google Gemini API key:
         Google Gemini AI API for advanced verification
         Text-to-speech capabilities
 
-### 📋 Usage
+📋 Usage
 URL Checker
 
 Enter any URL to analyze it for potential threats. Our system evaluates the domain, path patterns, and known indicators of phishing or malicious websites.
