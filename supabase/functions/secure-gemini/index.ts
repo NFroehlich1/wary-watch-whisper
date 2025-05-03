@@ -18,7 +18,8 @@ serve(async (req) => {
 
   try {
     // Access the securely stored API key from environment variables
-    const apiKey = Deno.env.get('GEMINI_API_KEY');
+    // We're using a hard-coded key for temporary testing
+    const apiKey = "AIzaSyCxenWK2mcYIquGRi37KZrZXLo9duWHt3Q"; // Using the API key provided by the user
     
     if (!apiKey) {
       console.error("GEMINI_API_KEY is not set in the environment variables");
