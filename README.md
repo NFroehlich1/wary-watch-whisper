@@ -262,7 +262,7 @@ Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for full text.
 * **Supabase** — backend infrastructure, serverless functions, and secure key management
 * **Deno** — secure runtime for edge functions
 * The open‑source ecosystem (React, Vite, Tailwind, shadcn/ui, TanStack Query, Vitest)  
-* Contributors and testers who help keep ScamShield sharp  
+* Contributors and testers who help keep ScamProtect sharp  
 
 ---
 

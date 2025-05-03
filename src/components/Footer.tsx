@@ -22,7 +22,7 @@ const Footer = () => {
           <span className="hidden md:block">•</span>
           <span>v1.0.0 Beta</span>
           <span className="hidden md:block">•</span>
-          <span>© 2025 ScamShield</span>
+          <span>© 2025 ScamProtect</span>
         </div>
       </div>
     </footer>
