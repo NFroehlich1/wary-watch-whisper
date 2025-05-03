@@ -78,7 +78,7 @@ const ResultDisplay = () => {
         
         {result.aiVerification && (
           <div>
-            <h4 className="font-medium text-sm text-muted-foreground mb-1">AI Verification:</h4>
+            <h4 className="font-medium text-sm text-muted-foreground mb-1">AI Verification (English):</h4>
             <p className="text-base">{result.aiVerification}</p>
           </div>
         )}

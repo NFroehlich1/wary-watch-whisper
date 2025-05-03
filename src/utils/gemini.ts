@@ -8,12 +8,12 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
   explanation: string;
 }> => {
   try {
-    // Create a prompt based on the detection type and language
+    // Always use English prompt regardless of the detected language
     let prompt = "";
     if (detectionType === 'url') {
-      prompt = getUrlPrompt(content, language);
+      prompt = getUrlPromptInEnglish(content);
     } else {
-      prompt = getTextPrompt(content, language);
+      prompt = getTextPromptInEnglish(content);
     }
 
     const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
@@ -64,6 +64,16 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
   }
 };
 
+// Always request responses in English regardless of input language
+const getUrlPromptInEnglish = (url: string): string => {
+  return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification in English.`;
+};
+
+const getTextPromptInEnglish = (text: string): string => {
+  return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". Please classify it as "safe", "suspicious" or "scam" and provide a brief justification in English.`;
+};
+
+// The below functions are kept for compatibility but will not be used anymore
 const getUrlPrompt = (url: string, language: Language): string => {
   if (language === 'es') {
     return `Analiza si esta URL es segura, sospechosa o una estafa. URL: "${url}". Por favor, clasifícala como "safe", "suspicious" o "scam" y proporciona una breve justificación.`;
