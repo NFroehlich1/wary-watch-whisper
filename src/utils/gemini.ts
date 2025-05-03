@@ -1,7 +1,8 @@
+
 import { Language, RiskLevel } from "../types";
 import { supabase } from "../integrations/supabase/client";
 
-export const verifyWithGemini = async (content: string, detectionType: 'url' | 'text', language: Language, apiKey?: string): Promise<{
+export const verifyWithGemini = async (content: string, detectionType: 'url' | 'text', language: Language): Promise<{
   riskAssessment: RiskLevel;
   explanation: string;
   confidenceLevel?: 'high' | 'medium' | 'low';

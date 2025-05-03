@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { ScamResult, DetectionType, Language, GeminiOptions } from '../types';
 import { verifyWithGemini } from '../utils/gemini';
@@ -23,7 +22,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
   const [result, setResult] = useState<ScamResult | null>(null);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [geminiOptions, setGeminiOptionsState] = useState<GeminiOptions>({
-    apiKey: 'AIzaSyDiZ4Kc7pNYsEqGw5Xqq_Zu2DvlCTibR9o', // Default from user input
+    apiKey: '', // Removed hardcoded key
     enabled: true
   });
   
@@ -51,14 +50,13 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
       }
       
       // If Gemini is enabled and it's a text or URL check, use it as the primary classifier
-      if (geminiOptions.enabled && geminiOptions.apiKey && (type === 'url' || type === 'text')) {
+      if (geminiOptions.enabled && (type === 'url' || type === 'text')) {
         try {
           const contentToVerify = content as string;
           const geminiResult = await verifyWithGemini(
             contentToVerify, 
             type, 
-            detectedRisk.detectedLanguage, 
-            geminiOptions.apiKey
+            detectedRisk.detectedLanguage
           );
           
           // Use Gemini's assessment as the primary source of truth
