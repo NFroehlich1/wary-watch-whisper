@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useScamDetection } from '@/context/ScamDetectionContext';
 import ResultDisplay from '../results/ResultDisplay';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 const UrlChecker = () => {
   const [url, setUrl] = useState('');
+  const [showHttpWarning, setShowHttpWarning] = useState(false);
   const { detectScam, loading, result, resetResult } = useScamDetection();
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -14,7 +17,23 @@ const UrlChecker = () => {
     if (!url.trim()) return;
     
     resetResult();
+    
+    // Check if URL uses HTTP instead of HTTPS and show warning
+    if (url.toLowerCase().startsWith('http:')) {
+      setShowHttpWarning(true);
+    } else {
+      setShowHttpWarning(false);
+    }
+    
     await detectScam(url, 'url');
+  };
+
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUrl(e.target.value);
+    // Hide the warning when user starts typing again
+    if (showHttpWarning) {
+      setShowHttpWarning(false);
+    }
   };
   
   return (
@@ -32,7 +51,7 @@ const UrlChecker = () => {
             type="url"
             placeholder="Enter URL (e.g., https://example.com)"
             value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            onChange={handleUrlChange}
             className="flex-1"
             required
           />
@@ -40,6 +59,15 @@ const UrlChecker = () => {
             {loading ? 'Checking...' : 'Check URL'}
           </Button>
         </div>
+        
+        {showHttpWarning && (
+          <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              Warning: This URL uses HTTP instead of HTTPS. HTTP connections are not secure and can be intercepted.
+            </AlertDescription>
+          </Alert>
+        )}
       </form>
       
       {result && <ResultDisplay />}
