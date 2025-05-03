@@ -11,19 +11,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
-// Form schema with validation to ensure questions are related to analysis
+// Form schema with less strict validation
 const questionSchema = z.object({
   question: z.string()
-    .min(5, { message: "Question must be at least 5 characters" })
-    .max(200, { message: "Question is too long" })
-    .refine(
-      (val) => {
-        // Only allow questions about analysis, risk, or explanation
-        const analysisTerms = ['why', 'how', 'what', 'explain', 'analysis', 'risk', 'reason', 'detection', 'scam', 'suspicious', 'safe'];
-        return analysisTerms.some(term => val.toLowerCase().includes(term));
-      }, 
-      { message: "Please ask questions related to the analysis results" }
-    )
+    .min(3, { message: "Question must be at least 3 characters" })
+    .max(250, { message: "Question is too long" })
 });
 
 type QuestionForm = z.infer<typeof questionSchema>;
@@ -138,7 +130,15 @@ const ResultDisplay = () => {
     try {
       // Use the context method to ask a question about analysis
       const response = await askAnalysisQuestion(data.question, result);
-      setAnswer(response);
+      
+      if (response.includes("not related to the analysis") || 
+          response.includes("can't answer questions about") ||
+          response.includes("doesn't appear to be related")) {
+        setAnswer("This question doesn't appear to be related to the analysis. Please ask questions about this specific scam detection result.");
+      } else {
+        setAnswer(response);
+      }
+      
       form.reset();
     } catch (error) {
       console.error("Failed to get answer:", error);
@@ -204,7 +204,7 @@ const ResultDisplay = () => {
                     <FormItem className="flex-1">
                       <FormControl>
                         <Input 
-                          placeholder="Ask why this was classified this way..." 
+                          placeholder="Ask anything about this analysis..." 
                           {...field} 
                           disabled={answerLoading}
                         />

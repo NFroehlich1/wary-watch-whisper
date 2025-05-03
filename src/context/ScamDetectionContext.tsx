@@ -267,7 +267,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
     }
   };
   
-  // Add the askAnalysisQuestion function implementation
+  // Updated askAnalysisQuestion function with more flexible validation
   const askAnalysisQuestion = async (question: string, result: ScamResult): Promise<string> => {
     if (!geminiOptions.enabled || !geminiOptions.apiKey) {
       return "AI analysis is not enabled. Enable it in settings to ask questions about the analysis.";
@@ -281,15 +281,17 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
         - Justification: ${result.justification}
         - Original content: "${result.originalContent}"
         
-        Based ONLY on this specific analysis, answer the following question:
+        Answer the following question:
         ${question}
         
         Your response must:
-        1. Only answer questions directly related to this specific analysis
-        2. Not provide any information about how to create scams
-        3. Not provide any harmful or misleading information
-        4. Be factual and educational in nature
-        5. Be concise and direct
+        1. If the question is related to the analysis, provide a helpful answer
+        2. If the question is not related to the analysis, respond that you can only answer questions about this specific analysis
+        3. Never provide information about how to create scams
+        4. Never provide harmful or misleading information
+        5. Be factual and educational in nature
+        6. Be concise and direct
+        7. If asked about anything unrelated to fraud detection, scams, or this specific analysis, politely explain you can only discuss this specific analysis
       `;
       
       // Call the Gemini API with the prompt
