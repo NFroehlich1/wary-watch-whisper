@@ -17,16 +17,15 @@ serve(async (req) => {
   }
 
   try {
-    // Access the securely stored API key from environment variables or use hardcoded key
-    // Attempting to get from environment first, then falling back to hardcoded key
-    const apiKey = Deno.env.get('GEMINI_API_KEY') || "AIzaSyCxenWK2mcYIquGRi37KZrZXLo9duWHt3Q";
+    // Use the hardcoded API key directly - since we're having issues with environment variables
+    const apiKey = "AIzaSyCxenWK2mcYIquGRi37KZrZXLo9duWHt3Q"; // Directly using the provided API key
     
-    console.log(`Using API key: ${apiKey ? "Key is present" : "Key is missing"}`);
+    console.log("Starting secure-gemini function with direct API key");
     
     if (!apiKey) {
-      console.error("GEMINI_API_KEY is not set in the environment variables and fallback is not working");
+      console.error("API key is missing");
       return new Response(
-        JSON.stringify({ error: "API key is not configured. Please set GEMINI_API_KEY in Supabase secrets." }),
+        JSON.stringify({ error: "API key is not configured properly." }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -64,6 +63,7 @@ serve(async (req) => {
     }
 
     console.log(`Calling Gemini API with content type: ${detectionType}`);
+    console.log(`Using API key (first few chars): ${apiKey.substring(0, 5)}...`);
     
     // Call the Gemini API securely with the API key
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent', {
