@@ -18,9 +18,10 @@ export function processAiResponse(aiResponse: string): {
   let explanation = '';
 
   // Check if this is an analysis question response rather than a classification
-  if (aiResponse.includes("Answer the following question:")) {
-    // This is a response to a question, not a classification
-    // Extract the full response as the explanation
+  if (aiResponse.includes("Answer the following question:") || 
+      aiResponse.toLowerCase().includes("question:") ||
+      !aiResponse.toLowerCase().includes("classification:")) {
+    // This is likely a response to a question, not a classification
     explanation = aiResponse;
     return { riskLevel, confidenceLevel, explanation };
   }

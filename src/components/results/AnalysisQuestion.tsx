@@ -43,18 +43,21 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
     setAnswer(null);
     
     try {
+      console.log("Submitting question:", data.question);
       // Use the context method to ask a question about analysis
       const response = await askAnalysisQuestion(data.question, result);
+      console.log("Received answer:", response);
       
       if (!response || 
-          response.includes("not enabled") ||
-          response.includes("couldn't answer")) {
+          response.includes("couldn't generate an answer") || 
+          response.includes("couldn't answer this question") ||
+          response.trim() === "") {
         toast({
           variant: "destructive",
           title: "Analysis Error",
-          description: "Could not process your question. Please try again.",
+          description: "Could not generate an answer to your question. Please try a different question.",
         });
-        setAnswer("Sorry, I couldn't get an answer to your question right now.");
+        setAnswer("Sorry, I couldn't generate an answer to your question. Please try asking something else about this specific analysis.");
       } else {
         setAnswer(response);
       }

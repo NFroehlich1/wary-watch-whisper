@@ -34,6 +34,8 @@ export const askAnalysisQuestion = async (
   try {
     const prompt = buildAnalysisPrompt(question, result);
     
+    console.log("Sending analysis question to Gemini:", question);
+    
     // Call our secure Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('secure-gemini', {
       body: {
@@ -55,6 +57,8 @@ export const askAnalysisQuestion = async (
     
     // Process the response to extract just the answer part
     const response = data.explanation;
+    console.log("Raw answer from Gemini:", response);
+    
     // Return the cleaned-up answer, removing any system prompt or classification parts
     const cleanedAnswer = cleanAnswerText(response);
     return cleanedAnswer || ERROR_MESSAGES.NO_ANSWER;
@@ -71,8 +75,25 @@ function cleanAnswerText(text: string): string {
   // Remove any analysis instruction text that might have been echoed back
   let cleanText = text;
   
+  // Check if the response contains any of our prompt text and remove it
+  if (text.includes("Answer the following question:")) {
+    const parts = text.split("Answer the following question:");
+    if (parts.length > 1) {
+      // Get the part after the prompt
+      const afterPrompt = parts[1].trim();
+      
+      // Look for the question in the response
+      const questionStart = afterPrompt.indexOf("?");
+      if (questionStart > 0 && questionStart < 100) { // Only if question mark is near the start
+        cleanText = afterPrompt.substring(questionStart + 1).trim();
+      } else {
+        cleanText = afterPrompt;
+      }
+    }
+  }
+  
   // If there's a clear answer section, extract just that
-  const answerSectionMatch = text.match(/^(.*?answer:)\s*([\s\S]+)$/i);
+  const answerSectionMatch = cleanText.match(/^.*?(answer|response):\s*([\s\S]+)$/i);
   if (answerSectionMatch) {
     cleanText = answerSectionMatch[2].trim();
   }
