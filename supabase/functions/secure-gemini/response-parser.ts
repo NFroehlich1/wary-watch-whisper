@@ -17,6 +17,14 @@ export function processAiResponse(aiResponse: string): {
   let confidenceLevel = 'medium';
   let explanation = '';
 
+  // Check if this is an analysis question response rather than a classification
+  if (aiResponse.includes("Answer the following question:")) {
+    // This is a response to a question, not a classification
+    // Extract the full response as the explanation
+    explanation = aiResponse;
+    return { riskLevel, confidenceLevel, explanation };
+  }
+
   // Extract classification and confidence level - be very conservative with "suspicious" classifications
   if (aiResponse.toLowerCase().includes('classification: scam')) {
     riskLevel = 'scam';

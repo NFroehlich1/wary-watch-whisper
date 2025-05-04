@@ -48,13 +48,37 @@ export const askAnalysisQuestion = async (
       throw new Error(`Failed to get analysis answer: ${error.message}`);
     }
     
-    // Extract the explanation as the answer to the question
-    return data.explanation || ERROR_MESSAGES.NO_ANSWER;
+    if (!data || !data.explanation) {
+      console.error("Empty response from Gemini API");
+      return ERROR_MESSAGES.NO_ANSWER;
+    }
+    
+    // Process the response to extract just the answer part
+    const response = data.explanation;
+    // Return the cleaned-up answer, removing any system prompt or classification parts
+    const cleanedAnswer = cleanAnswerText(response);
+    return cleanedAnswer || ERROR_MESSAGES.NO_ANSWER;
   } catch (error) {
     console.error("Error asking analysis question:", error);
     return ERROR_MESSAGES.API_ERROR;
   }
 };
+
+/**
+ * Cleans up the answer text by removing system prompts or classification prefixes
+ */
+function cleanAnswerText(text: string): string {
+  // Remove any analysis instruction text that might have been echoed back
+  let cleanText = text;
+  
+  // If there's a clear answer section, extract just that
+  const answerSectionMatch = text.match(/^(.*?answer:)\s*([\s\S]+)$/i);
+  if (answerSectionMatch) {
+    cleanText = answerSectionMatch[2].trim();
+  }
+  
+  return cleanText;
+}
 
 /**
  * Baut einen Prompt für die Analyse-Frage

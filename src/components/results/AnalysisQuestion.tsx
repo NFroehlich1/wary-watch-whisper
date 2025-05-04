@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { ScamResult } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 // Form schema with less strict validation
 const questionSchema = z.object({
@@ -26,6 +27,7 @@ interface AnalysisQuestionProps {
 const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysisQuestion }) => {
   const [answerLoading, setAnswerLoading] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
+  const { toast } = useToast();
   
   // Initialize form
   const form = useForm<QuestionForm>({
@@ -44,10 +46,15 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
       // Use the context method to ask a question about analysis
       const response = await askAnalysisQuestion(data.question, result);
       
-      if (response.includes("not related to the analysis") || 
-          response.includes("can't answer questions about") ||
-          response.includes("doesn't appear to be related")) {
-        setAnswer("This question doesn't appear to be related to the analysis. Please ask questions about this specific scam detection result.");
+      if (!response || 
+          response.includes("not enabled") ||
+          response.includes("couldn't answer")) {
+        toast({
+          variant: "destructive",
+          title: "Analysis Error",
+          description: "Could not process your question. Please try again.",
+        });
+        setAnswer("Sorry, I couldn't get an answer to your question right now.");
       } else {
         setAnswer(response);
       }
@@ -56,6 +63,11 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
     } catch (error) {
       console.error("Failed to get answer:", error);
       setAnswer("Sorry, I couldn't process your question about this analysis. Please try again with a different question.");
+      toast({
+        variant: "destructive",
+        title: "Analysis Error",
+        description: "Failed to get an answer to your question.",
+      });
     } finally {
       setAnswerLoading(false);
     }
