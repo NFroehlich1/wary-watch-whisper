@@ -23,6 +23,12 @@ export function processAiResponse(aiResponse: string): {
       !aiResponse.toLowerCase().includes("classification:")) {
     // This is likely a response to a question, not a classification
     explanation = aiResponse;
+    
+    // Make sure we don't return an empty explanation
+    if (!explanation.trim()) {
+      explanation = "I don't have enough information to answer this specific question about the analysis. Could you try asking something more specific about the content being analyzed?";
+    }
+    
     return { riskLevel, confidenceLevel, explanation };
   }
 

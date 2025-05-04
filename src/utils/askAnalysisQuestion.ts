@@ -1,13 +1,13 @@
 
 /**
- * Modul zur nachträglichen Analyse von Bewertungsergebnissen
- * Ermöglicht Benutzern, Fragen zu Bewertungsergebnissen zu stellen
+ * Module for post-analysis evaluation of assessment results
+ * Enables users to ask questions about assessment results
  */
 import { ScamResult, GeminiOptions } from '../types';
 import { supabase } from "../integrations/supabase/client";
 
 /**
- * Konstanten für Fehlermeldungen und Standards
+ * Constants for error messages and defaults
  */
 const ERROR_MESSAGES = {
   DISABLED: "AI analysis is not enabled. Enable it in settings to ask questions about the analysis.",
@@ -16,11 +16,11 @@ const ERROR_MESSAGES = {
 };
 
 /**
- * Stellt eine Frage zur Analyse eines Ergebnisses an die Gemini AI
- * @param question - Die zu stellende Frage
- * @param result - Das Ergebnis der Scam-Erkennung
- * @param geminiOptions - Konfiguration für die Gemini AI
- * @returns Die Antwort auf die Frage
+ * Asks a question about an analysis result to the Gemini AI
+ * @param question - The question to ask
+ * @param result - The scam detection result
+ * @param geminiOptions - Configuration for the Gemini AI
+ * @returns The answer to the question
  */
 export const askAnalysisQuestion = async (
   question: string, 
@@ -61,7 +61,16 @@ export const askAnalysisQuestion = async (
     
     // Return the cleaned-up answer, removing any system prompt or classification parts
     const cleanedAnswer = cleanAnswerText(response);
-    return cleanedAnswer || ERROR_MESSAGES.NO_ANSWER;
+    
+    // Make sure we never return empty answers
+    if (!cleanedAnswer || cleanedAnswer.trim() === "") {
+      return "Based on the analysis of this content, I can provide the following information: " + 
+        "This was classified as " + result.riskLevel + 
+        (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence` : "") + 
+        ". " + result.justification;
+    }
+    
+    return cleanedAnswer;
   } catch (error) {
     console.error("Error asking analysis question:", error);
     return ERROR_MESSAGES.API_ERROR;
@@ -72,6 +81,9 @@ export const askAnalysisQuestion = async (
  * Cleans up the answer text by removing system prompts or classification prefixes
  */
 function cleanAnswerText(text: string): string {
+  // If text is empty or undefined, return empty string
+  if (!text) return "";
+  
   // Remove any analysis instruction text that might have been echoed back
   let cleanText = text;
   
@@ -98,14 +110,15 @@ function cleanAnswerText(text: string): string {
     cleanText = answerSectionMatch[2].trim();
   }
   
-  return cleanText;
+  // If the answer is still empty after cleaning, return the original text
+  return cleanText.trim() || text;
 }
 
 /**
- * Baut einen Prompt für die Analyse-Frage
- * @param question - Die zu stellende Frage
- * @param result - Das Ergebnis der Scam-Erkennung
- * @returns Formatierter Prompt-String
+ * Builds a prompt for the analysis question
+ * @param question - The question to ask
+ * @param result - The scam detection result
+ * @returns Formatted prompt string
  */
 function buildAnalysisPrompt(question: string, result: ScamResult): string {
   return `
@@ -125,5 +138,7 @@ function buildAnalysisPrompt(question: string, result: ScamResult): string {
     5. Be factual and educational in nature
     6. Be concise and direct
     7. If asked about anything unrelated to fraud detection, scams, or this specific analysis, politely explain you can only discuss this specific analysis
+    8. DO NOT echo back the question, just provide the answer
+    9. Always provide SOME answer, even if brief
   `;
 }

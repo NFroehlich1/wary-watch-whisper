@@ -53,11 +53,14 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
           response.includes("couldn't answer this question") ||
           response.trim() === "") {
         toast({
-          variant: "destructive",
-          title: "Analysis Error",
-          description: "Could not generate an answer to your question. Please try a different question.",
+          title: "Limited Analysis",
+          description: "I can provide only basic information about this analysis.",
         });
-        setAnswer("Sorry, I couldn't generate an answer to your question. Please try asking something else about this specific analysis.");
+        
+        // Provide a fallback response based on the analysis data we already have
+        setAnswer(`Based on the analysis, this content was classified as ${result.riskLevel}` + 
+          (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence.` : '.') +
+          ` The analysis determined: ${result.justification}`);
       } else {
         setAnswer(response);
       }
@@ -65,11 +68,13 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
       form.reset();
     } catch (error) {
       console.error("Failed to get answer:", error);
-      setAnswer("Sorry, I couldn't process your question about this analysis. Please try again with a different question.");
+      setAnswer("I can analyze what I know about this content: " + 
+        `This was classified as ${result.riskLevel}` + 
+        (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence.` : '.') + 
+        ` ${result.justification}`);
       toast({
-        variant: "destructive",
-        title: "Analysis Error",
-        description: "Failed to get an answer to your question.",
+        title: "Analysis Available",
+        description: "I'll provide what I know about this content.",
       });
     } finally {
       setAnswerLoading(false);
