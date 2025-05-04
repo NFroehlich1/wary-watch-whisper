@@ -17,7 +17,7 @@ const Footer = () => {
             className="flex items-center hover:text-primary transition-colors"
           >
             <ExternalLink className="h-3 w-3 mr-1" />
-            Veröffentlichungs-Guide
+            Deployment Guide
           </a>
           <span className="hidden md:block">•</span>
           <span>v1.0.0 Beta</span>

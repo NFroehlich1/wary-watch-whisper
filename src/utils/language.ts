@@ -35,21 +35,12 @@ export const getTranslation = (key: string, language: Language): string => {
     }
   };
 
-  return translations[key]?.[language] || key;
+  // Always return English translation regardless of the language parameter
+  return translations[key]?.['en'] || key;
 };
 
+// Modified to always detect as English regardless of text content
 export const detectTextLanguage = (text: string): Language => {
-  // Enhanced language detection
-  // Check for German first (special characters and common German words)
-  if (text.match(/[äöüßÄÖÜ]/i) || 
-      /\b(und|oder|für|das|die|der|ein|eine|mal|könntest|wäre)\b/i.test(text)) {
-    return 'de';
-  }
-  // Spanish detection
-  if (text.match(/[áéíóúñ¿¡]/i)) return 'es';
-  // French detection
-  if (text.match(/[àâçéèêëîïôùûüÿœæ]/i)) return 'fr';
-  
-  // Default to English
+  // Always return English
   return 'en';
 };

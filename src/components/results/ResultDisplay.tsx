@@ -9,6 +9,7 @@ import LanguageInfo from './LanguageInfo';
 import ContentDisplay from './ContentDisplay';
 import AnalysisQuestion from './AnalysisQuestion';
 import EmojiReaction from './EmojiReaction';
+import { getTranslation } from '@/utils/language';
 
 const ResultDisplay = () => {
   const { result, playAudio, audioPlaying, askAnalysisQuestion } = useScamDetection();
@@ -27,9 +28,9 @@ const ResultDisplay = () => {
     <Card className="mt-6">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
-          <CardTitle>Analyseergebnis</CardTitle>
+          <CardTitle>Analysis Result</CardTitle>
           <CardDescription>
-            Analyse durchgeführt am {new Date(result.timestamp).toLocaleString()}
+            Analysis performed on {new Date(result.timestamp).toLocaleString()}
           </CardDescription>
         </div>
         <StatusBadge 
@@ -39,11 +40,11 @@ const ResultDisplay = () => {
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
         <div className="bg-muted p-3 rounded-md text-sm text-muted-foreground mb-4">
-          <strong>Hinweis:</strong> Diese Analyse dient nur als Orientierungshilfe. Die endgültige Beurteilung sollte immer auf Ihrem eigenen Urteilsvermögen basieren.
+          <strong>Note:</strong> This analysis serves only as guidance. Final judgment should always be based on your own discretion.
         </div>
         
         <div>
-          <h4 className="font-medium text-sm text-muted-foreground mb-1">Analyse:</h4>
+          <h4 className="font-medium text-sm text-muted-foreground mb-1">Analysis:</h4>
           <p className="text-base">{getVerificationText()}</p>
         </div>
         
@@ -69,7 +70,7 @@ const ResultDisplay = () => {
           disabled={audioPlaying}
         >
           {audioPlaying ? <Volume2 className="mr-2 h-4 w-4 animate-pulse" /> : <Volume2 className="mr-2 h-4 w-4" />}
-          {audioPlaying ? 'Wird abgespielt...' : 'Ergebnis anhören'}
+          {audioPlaying ? 'Playing...' : getTranslation('listen', 'en')}
         </Button>
       </CardFooter>
     </Card>
