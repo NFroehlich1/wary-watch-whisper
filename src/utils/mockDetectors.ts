@@ -6,34 +6,35 @@ export const mockUrlCheck = (url: string): ScamResult => {
   // Primary check: Is the URL using HTTP instead of HTTPS?
   const isUsingHttp = url.toLowerCase().startsWith('http:') && !url.toLowerCase().startsWith('https:');
   
-  // Secondary checks for other suspicious patterns
+  // Secondary checks for other suspicious patterns - require more evidence to flag as suspicious
   const isScam = url.includes('scam') || url.includes('phish');
-  const isVerySuspicious = (url.includes('verify') || url.includes('confirm')) && url.includes('login');
-  const isSuspicious = (url.includes('buy') && url.includes('free')) || (url.includes('win') && url.includes('now'));
+  const isVerySuspicious = (url.includes('verify') && url.includes('login') && url.includes('urgent'));
+  const isSuspicious = (url.includes('buy') && url.includes('free') && url.includes('urgent')) || 
+                       (url.includes('win') && url.includes('now') && url.includes('money'));
   
   let riskLevel: 'scam' | 'suspicious' | 'safe' = 'safe';
-  let justification = "This URL appears to be secure as it uses HTTPS.";
+  let justification = "Diese URL scheint sicher zu sein, da sie HTTPS verwendet.";
   
   if (isScam) {
     riskLevel = 'scam';
-    justification = "This URL contains known phishing patterns and has been flagged as malicious.";
-  } else if (isUsingHttp && (isVerySuspicious || url.includes('bank'))) {
-    // Only flag HTTP as suspicious if it also contains other suspicious elements
+    justification = "Diese URL enthält bekannte Phishing-Muster und wurde als bösartig eingestuft.";
+  } else if (isUsingHttp && isVerySuspicious) {
+    // Only flag HTTP as suspicious if it also contains multiple suspicious elements
     riskLevel = 'suspicious';
-    justification = "This URL uses HTTP instead of HTTPS and contains suspicious keywords. HTTP connections are not secure and can be intercepted.";
+    justification = "Diese URL verwendet HTTP anstatt HTTPS und enthält verdächtige Schlüsselwörter. HTTP-Verbindungen sind nicht sicher und können abgefangen werden.";
   } else if (isVerySuspicious) {
     riskLevel = 'suspicious';
-    justification = "This URL contains highly suspicious keywords often associated with phishing attempts. Exercise extreme caution.";
+    justification = "Diese URL enthält sehr verdächtige Schlüsselwörter, die häufig mit Phishing-Versuchen verbunden sind. Seien Sie äußerst vorsichtig.";
   } else if (isSuspicious && isUsingHttp) {
-    // Only consider it suspicious if multiple indicators are present
+    // Multiple indicators must be present
     riskLevel = 'suspicious';
-    justification = "This URL contains suspicious keywords and uses insecure HTTP. Proceed with caution.";
+    justification = "Diese URL enthält verdächtige Schlüsselwörter und verwendet unsicheres HTTP. Bitte seien Sie vorsichtig.";
   }
   
   return {
     riskLevel,
     justification,
-    detectedLanguage: 'en',
+    detectedLanguage: 'de',
     originalContent: url,
     timestamp: new Date().toISOString(),
     confidenceLevel: isScam ? 'high' : isVerySuspicious ? 'high' : isSuspicious ? 'medium' : 'high'
@@ -60,16 +61,15 @@ export const mockTextCheck = (text: string, language?: Language): ScamResult => 
                     text.toLowerCase().includes('urgente') ||
                     text.toLowerCase().includes('dringend');
   
-  // Combined checks for more accurate classification
-  const isScam = (hasPasswordRequest || hasCreditCardRequest) && hasUrgency;
+  // Combined checks for more accurate classification - require multiple indicators
+  const isScam = (hasPasswordRequest && hasCreditCardRequest && hasUrgency);
               
-  const isVerySuspicious = (text.toLowerCase().includes('verify account') && text.toLowerCase().includes('click')) ||
-                         (text.toLowerCase().includes('suspicious activity') && text.toLowerCase().includes('login')) ||
-                         (text.toLowerCase().includes('limited access') && hasUrgency) ||
-                         (text.toLowerCase().includes('bestätigen sie ihr konto') && text.toLowerCase().includes('klicken')) || 
-                         (text.toLowerCase().includes('verdächtige aktivität') && text.toLowerCase().includes('anmelden')) ||
-                         (text.toLowerCase().includes('verifique su cuenta') && text.toLowerCase().includes('clic')) ||
-                         (text.toLowerCase().includes('vérifier votre compte') && text.toLowerCase().includes('cliquez'));
+  const isVerySuspicious = (text.toLowerCase().includes('verify account') && text.toLowerCase().includes('click') && hasUrgency) ||
+                         (text.toLowerCase().includes('suspicious activity') && text.toLowerCase().includes('login') && hasUrgency) ||
+                         (text.toLowerCase().includes('bestätigen sie ihr konto') && text.toLowerCase().includes('klicken') && hasUrgency) || 
+                         (text.toLowerCase().includes('verdächtige aktivität') && text.toLowerCase().includes('anmelden') && hasUrgency) ||
+                         (text.toLowerCase().includes('verifique su cuenta') && text.toLowerCase().includes('clic') && hasUrgency) ||
+                         (text.toLowerCase().includes('vérifier votre compte') && text.toLowerCase().includes('cliquez') && hasUrgency);
                 
   const isSuspicious = (text.toLowerCase().includes('money') && text.toLowerCase().includes('bank') && text.toLowerCase().includes('click')) ||
                       (text.toLowerCase().includes('dinero') && text.toLowerCase().includes('banco') && text.toLowerCase().includes('clic')) ||
@@ -82,7 +82,8 @@ export const mockTextCheck = (text: string, language?: Language): ScamResult => 
     riskLevel = 'scam';
   } else if (isVerySuspicious) {
     riskLevel = 'suspicious'; // Same level but different justification
-  } else if (isSuspicious) {
+  } else if (isSuspicious && hasUrgency) {
+    // Require both suspicious content AND urgency to flag as suspicious
     riskLevel = 'suspicious';
   }
   
@@ -97,13 +98,12 @@ export const mockTextCheck = (text: string, language?: Language): ScamResult => 
 };
 
 export const mockVoiceCheck = (): ScamResult => {
-  // For demo purposes, we're using a fixed result
-  // In a real app, this would use speech-to-text and then analyze the text
+  // For demo purposes - now less likely to flag as suspicious by default
   return {
-    riskLevel: 'suspicious',
-    justification: "The voice message contains urgent requests for financial information, which is a common scam tactic.",
-    detectedLanguage: 'en',
-    originalContent: "Voice transcription would appear here in a real implementation.",
+    riskLevel: 'safe',
+    justification: "Die Sprachnachricht enthält keine eindeutigen Anzeichen für einen Betrugsversuch.",
+    detectedLanguage: 'de',
+    originalContent: "Die Transkription der Sprachnachricht würde in einer realen Implementierung hier erscheinen.",
     timestamp: new Date().toISOString()
   };
 };

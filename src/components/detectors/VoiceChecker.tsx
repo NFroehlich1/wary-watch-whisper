@@ -7,6 +7,7 @@ import { Mic } from 'lucide-react';
 
 const VoiceChecker = () => {
   const [file, setFile] = useState<File | null>(null);
+  const [transcription, setTranscription] = useState<string>('');
   const { detectScam, loading, result, resetResult } = useScamDetection();
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -20,22 +21,34 @@ const VoiceChecker = () => {
     if (!file) return;
     
     resetResult();
-    await detectScam(file, 'voice');
+    try {
+      // For now we'll use a placeholder transcription until we implement the actual transcription service
+      const demoTranscript = "Das ist eine Transkription der Sprachnachricht.";
+      setTranscription(demoTranscript);
+      
+      // Now analyze the text content with Gemini
+      await detectScam(demoTranscript, 'text', 'de');
+    } catch (error) {
+      console.error('Error processing voice note:', error);
+    }
   };
   
   const handleSampleUpload = () => {
-    // In a real app, this would be an actual audio file
-    // For demo purposes, we'll just trigger the fake analysis
     resetResult();
-    detectScam(new File([""], "sample-voice.mp3"), 'voice');
+    // Use a sample German transcription for demo purposes
+    const sampleTranscript = "DRINGEND: Ihre Bank benötigt eine Bestätigung Ihrer Daten. Bitte rufen Sie uns umgehend unter dieser unbekannten Nummer an.";
+    setTranscription(sampleTranscript);
+    
+    // Analyze the sample text with Gemini
+    detectScam(sampleTranscript, 'text', 'de');
   };
   
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold">Analyze Voice Notes</h2>
+        <h2 className="text-xl font-semibold">Sprachnachrichten analysieren</h2>
         <p className="text-muted-foreground">
-          Transcribe and analyze voice notes for scam patterns.
+          Transkribieren und analysieren Sie Sprachnachrichten auf Betrugsmuster.
         </p>
       </div>
       
@@ -46,7 +59,7 @@ const VoiceChecker = () => {
           onClick={handleSampleUpload}
         >
           <Mic className="h-12 w-12 mb-2" />
-          <span className="text-xs">Use Sample Voice Note</span>
+          <span className="text-xs">Beispiel-Sprachnachricht verwenden</span>
         </Button>
       </div>
       
@@ -65,19 +78,26 @@ const VoiceChecker = () => {
                 <Mic className="h-6 w-6 text-muted-foreground" />
               </div>
               <p className="text-sm font-medium">
-                {file ? file.name : "Click to upload a voice note"}
+                {file ? file.name : "Klicken Sie, um eine Sprachnachricht hochzuladen"}
               </p>
               <p className="text-xs text-muted-foreground">
-                Supports WAV, MP3, OGG, M4A (Max 5MB)
+                Unterstützt WAV, MP3, OGG, M4A (max. 5 MB)
               </p>
             </label>
           </div>
           
           <Button type="submit" disabled={loading || !file}>
-            {loading ? 'Analyzing...' : 'Analyze Voice Note'}
+            {loading ? 'Analyse läuft...' : 'Sprachnachricht analysieren'}
           </Button>
         </div>
       </form>
+      
+      {transcription && !result && (
+        <div className="mt-4 p-4 border rounded-md bg-gray-50">
+          <h3 className="text-sm font-medium mb-2">Transkription:</h3>
+          <p className="text-sm">{transcription}</p>
+        </div>
+      )}
       
       {result && <ResultDisplay />}
     </div>

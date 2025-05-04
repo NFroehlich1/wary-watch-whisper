@@ -27,9 +27,9 @@ const ResultDisplay = () => {
     <Card className="mt-6">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
-          <CardTitle>Analysis Results</CardTitle>
+          <CardTitle>Analyseergebnis</CardTitle>
           <CardDescription>
-            Analysis completed on {new Date(result.timestamp).toLocaleString()}
+            Analyse durchgeführt am {new Date(result.timestamp).toLocaleString()}
           </CardDescription>
         </div>
         <StatusBadge 
@@ -38,8 +38,12 @@ const ResultDisplay = () => {
         />
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
+        <div className="bg-muted p-3 rounded-md text-sm text-muted-foreground mb-4">
+          <strong>Hinweis:</strong> Diese Analyse dient nur als Orientierungshilfe. Die endgültige Beurteilung sollte immer auf Ihrem eigenen Urteilsvermögen basieren.
+        </div>
+        
         <div>
-          <h4 className="font-medium text-sm text-muted-foreground mb-1">Analysis:</h4>
+          <h4 className="font-medium text-sm text-muted-foreground mb-1">Analyse:</h4>
           <p className="text-base">{getVerificationText()}</p>
         </div>
         
@@ -65,7 +69,7 @@ const ResultDisplay = () => {
           disabled={audioPlaying}
         >
           {audioPlaying ? <Volume2 className="mr-2 h-4 w-4 animate-pulse" /> : <Volume2 className="mr-2 h-4 w-4" />}
-          {audioPlaying ? 'Playing...' : 'Listen to Result'}
+          {audioPlaying ? 'Wird abgespielt...' : 'Ergebnis anhören'}
         </Button>
       </CardFooter>
     </Card>

@@ -13,25 +13,26 @@ export function processAiResponse(aiResponse: string): {
   confidenceLevel: string, 
   explanation: string 
 } {
-  let riskLevel = 'safe'; // Changed default from 'suspicious' to 'safe'
+  let riskLevel = 'safe'; // Default to 'safe'
   let confidenceLevel = 'medium';
   let explanation = '';
 
-  // Extract classification and confidence level - be more conservative with "suspicious" classifications
+  // Extract classification and confidence level - be very conservative with "suspicious" classifications
   if (aiResponse.toLowerCase().includes('classification: scam')) {
     riskLevel = 'scam';
     confidenceLevel = 'high';
   } else if (aiResponse.toLowerCase().includes('classification: high suspicion')) {
+    // Only classify as high suspicion if explicitly stated
     riskLevel = 'suspicious';
     confidenceLevel = 'high';
   } else if (
     aiResponse.toLowerCase().includes('classification: suspicious') &&
-    (aiResponse.toLowerCase().includes('urgent') || 
-     aiResponse.toLowerCase().includes('password') ||
-     aiResponse.toLowerCase().includes('credential') ||
-     aiResponse.toLowerCase().includes('bank details'))
+    (aiResponse.toLowerCase().includes('urgent') && 
+     (aiResponse.toLowerCase().includes('password') ||
+      aiResponse.toLowerCase().includes('credential') ||
+      aiResponse.toLowerCase().includes('bank details')))
   ) {
-    // Only classify as suspicious if specific high-risk words are present
+    // Only classify as suspicious if multiple high-risk indicators are present
     riskLevel = 'suspicious';
     confidenceLevel = 'medium';
   } else if (aiResponse.toLowerCase().includes('classification: safe')) {
@@ -40,7 +41,7 @@ export function processAiResponse(aiResponse: string): {
   } else {
     // If classification is unclear, default to safe
     riskLevel = 'safe';
-    confidenceLevel = 'medium';
+    confidenceLevel = 'low';
   }
 
   // Extract explanation (everything after the classification line)
