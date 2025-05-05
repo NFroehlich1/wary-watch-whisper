@@ -10,7 +10,20 @@ export const playAudioFromResult = (result: ScamResult, onEnd: () => void): void
   // Generate the appropriate verdict text
   const verdictText = getVerdictText(result.riskLevel, result.confidenceLevel, 'en');
   
-  speech.text = `${verdictText}. ${result.justification}`;
+  let detailedText = "";
+  
+  // Create a more detailed explanation based on risk level
+  if (result.riskLevel === 'scam') {
+    detailedText = `This content was identified as a scam with high confidence. The analysis found: ${result.justification}`;
+  } else if (result.riskLevel === 'suspicious' && result.confidenceLevel === 'high') {
+    detailedText = `This content shows highly suspicious patterns that require caution. The analysis found: ${result.justification}`;
+  } else if (result.riskLevel === 'suspicious') {
+    detailedText = `This content contains some suspicious elements that warrant caution. The analysis found: ${result.justification}`;
+  } else {
+    detailedText = `This content appears safe based on our analysis. ${result.justification}`;
+  }
+  
+  speech.text = `${verdictText}. ${detailedText}`;
   speech.onend = onEnd;
   
   window.speechSynthesis.speak(speech);

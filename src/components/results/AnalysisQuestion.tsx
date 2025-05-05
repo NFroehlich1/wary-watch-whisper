@@ -53,8 +53,8 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
           response.includes("couldn't answer this question") ||
           response.trim() === "") {
         toast({
-          title: "Limited Analysis",
-          description: "I can provide only basic information about this analysis.",
+          title: "Analysis Information",
+          description: "I'll provide what I know about this analysis.",
         });
         
         // Provide a fallback response based on the analysis data we already have
@@ -94,7 +94,7 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
                 <FormItem className="flex-1">
                   <FormControl>
                     <Input 
-                      placeholder="Ask anything about this analysis..." 
+                      placeholder="Ask for more detailed explanations..." 
                       {...field} 
                       disabled={answerLoading}
                     />
@@ -106,12 +106,12 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
               {answerLoading ? (
                 <span className="flex items-center gap-1">
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent"></span>
-                  Asking...
+                  Analyzing...
                 </span>
               ) : (
                 <span className="flex items-center gap-1">
                   <MessageCircle className="h-4 w-4" />
-                  Ask
+                  Explain More
                 </span>
               )}
             </Button>

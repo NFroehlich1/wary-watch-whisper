@@ -1,6 +1,6 @@
 
 /**
- * Functions for parsing and processing Gemini API responses
+ * Functions for parsing and processing Gemini AI responses
  */
 
 /**

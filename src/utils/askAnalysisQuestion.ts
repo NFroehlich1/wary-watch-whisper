@@ -131,14 +131,17 @@ function buildAnalysisPrompt(question: string, result: ScamResult): string {
     ${question}
     
     Your response must:
-    1. If the question is related to the analysis, provide a helpful answer
-    2. If the question is not related to the analysis, respond that you can only answer questions about this specific analysis
-    3. Never provide information about how to create scams
-    4. Never provide harmful or misleading information
-    5. Be factual and educational in nature
-    6. Be concise and direct
-    7. If asked about anything unrelated to fraud detection, scams, or this specific analysis, politely explain you can only discuss this specific analysis
-    8. DO NOT echo back the question, just provide the answer
-    9. Always provide SOME answer, even if brief
+    1. Provide a DETAILED and THOROUGH answer specifically addressing the user's question
+    2. Include specific examples from the analysis if relevant
+    3. Explain technical terms in simple language
+    4. Be factual and educational
+    5. If the question relates to why the content was flagged, provide detailed reasoning
+    6. If asked for advice on how to identify similar scams, provide clear guidance
+    7. If asked about a specific aspect of the analysis, focus your answer on that aspect
+    8. Provide comprehensive explanations about technical details if asked
+    9. Never provide information about how to create scams
+    10. DO NOT use generic responses - be specific to the question and the analyzed content
+    11. If you don't know, say so specifically and explain why, rather than providing generic information
   `;
 }
+

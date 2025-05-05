@@ -16,7 +16,12 @@ export function buildUrlPrompt(url: string): string {
   - CLASSIFICATION: HIGH SUSPICION if there are significant red flags but not 100% certain
   - CLASSIFICATION: SCAM if you're highly confident it's malicious
   
-  Then provide a brief justification in English.`;
+  Then provide a thorough and detailed justification in English, explaining:
+  - Domain reputation and age if relevant
+  - URL structure concerns
+  - Red flags or safety indicators
+  - Potential threats or what makes it safe
+  - Specific signs of phishing, if any`;
 }
 
 /**
@@ -32,5 +37,10 @@ export function buildTextPrompt(text: string): string {
   - CLASSIFICATION: HIGH SUSPICION if there are significant red flags but not 100% certain
   - CLASSIFICATION: SCAM if you're highly confident it's malicious
   
-  Then provide a brief justification in English.`;
+  Then provide a detailed and thorough justification in English, explaining:
+  - Specific language patterns or psychological tactics used
+  - Presence of urgency, threats, or promises
+  - Requests for personal information or financial details
+  - Grammar, spelling, or formatting that may indicate a scam
+  - Context that makes the message safe or suspicious`;
 }
