@@ -23,11 +23,11 @@ const VoiceChecker = () => {
     resetResult();
     try {
       // For now we'll use a placeholder transcription until we implement the actual transcription service
-      const demoTranscript = "Das ist eine Transkription der Sprachnachricht.";
+      const demoTranscript = "This is a transcription of the voice message.";
       setTranscription(demoTranscript);
       
       // Now analyze the text content with Gemini
-      await detectScam(demoTranscript, 'text', 'de');
+      await detectScam(demoTranscript, 'text', 'en');
     } catch (error) {
       console.error('Error processing voice note:', error);
     }
@@ -35,20 +35,20 @@ const VoiceChecker = () => {
   
   const handleSampleUpload = () => {
     resetResult();
-    // Use a sample German transcription for demo purposes
-    const sampleTranscript = "DRINGEND: Ihre Bank benötigt eine Bestätigung Ihrer Daten. Bitte rufen Sie uns umgehend unter dieser unbekannten Nummer an.";
+    // Use a sample English transcription for demo purposes
+    const sampleTranscript = "URGENT: Your bank requires confirmation of your data. Please call us immediately at this unknown number.";
     setTranscription(sampleTranscript);
     
     // Analyze the sample text with Gemini
-    detectScam(sampleTranscript, 'text', 'de');
+    detectScam(sampleTranscript, 'text', 'en');
   };
   
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold">Sprachnachrichten analysieren</h2>
+        <h2 className="text-xl font-semibold">Analyze Voice Messages</h2>
         <p className="text-muted-foreground">
-          Transkribieren und analysieren Sie Sprachnachrichten auf Betrugsmuster.
+          Transcribe and analyze voice messages for scam patterns.
         </p>
       </div>
       
@@ -59,7 +59,7 @@ const VoiceChecker = () => {
           onClick={handleSampleUpload}
         >
           <Mic className="h-12 w-12 mb-2" />
-          <span className="text-xs">Beispiel-Sprachnachricht verwenden</span>
+          <span className="text-xs">Use Sample Voice Message</span>
         </Button>
       </div>
       
@@ -78,23 +78,23 @@ const VoiceChecker = () => {
                 <Mic className="h-6 w-6 text-muted-foreground" />
               </div>
               <p className="text-sm font-medium">
-                {file ? file.name : "Klicken Sie, um eine Sprachnachricht hochzuladen"}
+                {file ? file.name : "Click to upload a voice message"}
               </p>
               <p className="text-xs text-muted-foreground">
-                Unterstützt WAV, MP3, OGG, M4A (max. 5 MB)
+                Supports WAV, MP3, OGG, M4A (max. 5 MB)
               </p>
             </label>
           </div>
           
           <Button type="submit" disabled={loading || !file}>
-            {loading ? 'Analyse läuft...' : 'Sprachnachricht analysieren'}
+            {loading ? 'Analysis in progress...' : 'Analyze Voice Message'}
           </Button>
         </div>
       </form>
       
       {transcription && !result && (
         <div className="mt-4 p-4 border rounded-md bg-gray-50">
-          <h3 className="text-sm font-medium mb-2">Transkription:</h3>
+          <h3 className="text-sm font-medium mb-2">Transcription:</h3>
           <p className="text-sm">{transcription}</p>
         </div>
       )}
