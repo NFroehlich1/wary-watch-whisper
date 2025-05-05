@@ -44,3 +44,34 @@ export function buildTextPrompt(text: string): string {
   - Grammar, spelling, or formatting that may indicate a scam
   - Context that makes the message safe or suspicious`;
 }
+
+/**
+ * Builds a detailed analysis question prompt
+ * This is used when the user asks specific questions about an analysis
+ * @param question - The user's question
+ * @param analysisContext - The context of the original analysis
+ * @returns Formatted question prompt
+ */
+export function buildAnalysisQuestionPrompt(question: string, analysisContext: string): string {
+  return `
+    I analyzed content with the following details:
+    ${analysisContext}
+    
+    Please answer the following specific question about this analysis:
+    "${question}"
+    
+    Provide a detailed, educational response that:
+    1. Answers the specific question directly and thoroughly
+    2. Explains relevant concepts or terms
+    3. References specific aspects of the analyzed content when relevant
+    4. Includes concrete examples if applicable
+    5. Explains technical details in a way that's easy to understand
+    
+    If the question asks about specific details that weren't covered in the original analysis,
+    make reasonable inferences based on the information provided, but clearly indicate 
+    when you're making an inference rather than stating a fact from the analysis.
+    
+    Format your answer to be informative and educational, focusing specifically on what
+    the user asked about.
+  `;
+}

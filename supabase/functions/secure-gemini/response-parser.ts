@@ -24,6 +24,9 @@ export function processAiResponse(aiResponse: string): {
     // This is likely a response to a question, not a classification
     explanation = aiResponse;
     
+    // Clean up the explanation from any prompt repetition
+    explanation = cleanAnalysisQuestionResponse(explanation);
+    
     // Make sure we don't return an empty explanation
     if (!explanation.trim()) {
       explanation = "I don't have enough information to answer this specific question about the analysis. Could you try asking something more specific about the content being analyzed?";
@@ -68,4 +71,56 @@ export function processAiResponse(aiResponse: string): {
   }
 
   return { riskLevel, confidenceLevel, explanation };
+}
+
+/**
+ * Cleans up analysis question responses by removing prompt repetition
+ * and extracting the most relevant part of the answer
+ * @param response - The raw response from the AI
+ * @returns A cleaned response
+ */
+function cleanAnalysisQuestionResponse(response: string): string {
+  // Remove any sections that repeat the question or prompt
+  let cleanedResponse = response;
+  
+  // Remove any system instructions that might have been echoed back
+  const promptMarkers = [
+    "I analyzed content with the following details:",
+    "Please answer the following specific question",
+    "Provide a detailed, educational response",
+    "Format your answer to be",
+    "Please answer the following question:"
+  ];
+  
+  for (const marker of promptMarkers) {
+    if (cleanedResponse.includes(marker)) {
+      // Find the position after the marker and any subsequent instructions
+      const markerPos = cleanedResponse.indexOf(marker);
+      // Look for the end of the instructions section
+      const possibleEndMarkers = ["\n\n", "\nAnswer:", "\nResponse:"];
+      let endPos = -1;
+      
+      for (const endMarker of possibleEndMarkers) {
+        const tempEndPos = cleanedResponse.indexOf(endMarker, markerPos + marker.length);
+        if (tempEndPos !== -1 && (endPos === -1 || tempEndPos < endPos)) {
+          endPos = tempEndPos + endMarker.length;
+        }
+      }
+      
+      if (endPos !== -1) {
+        cleanedResponse = cleanedResponse.substring(endPos).trim();
+      }
+    }
+  }
+  
+  // If the response starts with "Answer:" or similar, remove that prefix
+  cleanedResponse = cleanedResponse.replace(/^(Answer|Response):\s*/i, '');
+  
+  // If the original question is repeated, remove it
+  const questionMatch = cleanedResponse.match(/^("[^"]+"|'[^']+'|[^.,!?:;]+\?)\s*/);
+  if (questionMatch) {
+    cleanedResponse = cleanedResponse.substring(questionMatch[0].length).trim();
+  }
+  
+  return cleanedResponse;
 }

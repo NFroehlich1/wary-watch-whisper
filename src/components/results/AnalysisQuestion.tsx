@@ -125,8 +125,8 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
       </Form>
       
       {answer && (
-        <div className="mt-3 p-3 bg-primary/5 rounded-md">
-          <p className="text-sm">{answer}</p>
+        <div className="mt-3 p-4 bg-primary/5 rounded-md border border-primary/10">
+          <p className="text-sm whitespace-pre-line">{answer}</p>
         </div>
       )}
     </div>

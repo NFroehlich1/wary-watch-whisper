@@ -110,6 +110,9 @@ function cleanAnswerText(text: string): string {
     cleanText = answerSectionMatch[2].trim();
   }
   
+  // Remove any quotation marks that might be wrapping the actual question
+  cleanText = cleanText.replace(/^['"](.+)['"]\s*/, '');
+  
   // If the answer is still empty after cleaning, return the original text
   return cleanText.trim() || text;
 }
@@ -121,27 +124,30 @@ function cleanAnswerText(text: string): string {
  * @returns Formatted prompt string
  */
 function buildAnalysisPrompt(question: string, result: ScamResult): string {
-  return `
-    I analyzed a message or URL with the following details:
+  const analysisContext = `
     - Risk level: ${result.riskLevel}${result.confidenceLevel ? ` (${result.confidenceLevel} confidence)` : ''}
     - Justification: ${result.justification}
     - Original content: "${result.originalContent}"
+  `;
+  
+  return `
+    I analyzed a message or URL with the following details:
+    ${analysisContext}
     
-    Answer the following question:
-    ${question}
+    Please answer the following specific question about this analysis:
+    "${question}"
     
-    Your response must:
-    1. Provide a DETAILED and THOROUGH answer specifically addressing the user's question
-    2. Include specific examples from the analysis if relevant
-    3. Explain technical terms in simple language
-    4. Be factual and educational
-    5. If the question relates to why the content was flagged, provide detailed reasoning
-    6. If asked for advice on how to identify similar scams, provide clear guidance
-    7. If asked about a specific aspect of the analysis, focus your answer on that aspect
-    8. Provide comprehensive explanations about technical details if asked
-    9. Never provide information about how to create scams
-    10. DO NOT use generic responses - be specific to the question and the analyzed content
-    11. If you don't know, say so specifically and explain why, rather than providing generic information
+    Provide a detailed, educational response that:
+    1. Answers the specific question directly and thoroughly
+    2. Explains relevant concepts or terms
+    3. References specific aspects of the analyzed content when relevant
+    4. Includes concrete examples if applicable
+    5. Explains technical details in a way that's easy to understand
+    
+    Your response must be detailed, specific to the question asked, and focused on 
+    the analyzed content. Never provide generic responses - always tailor your answer
+    to the specific question and analysis context.
+    
+    If you don't know, say so specifically rather than providing a generic response.
   `;
 }
-
