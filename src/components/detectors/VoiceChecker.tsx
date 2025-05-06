@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { useScamDetection } from '@/context/ScamDetectionContext';
@@ -93,26 +94,32 @@ const VoiceChecker = () => {
         description: "Transcribing and analyzing your message...",
       });
       
-      // Create a form data object with the audio file
-      const formData = new FormData();
-      formData.append('audio', file);
+      // In a real implementation, we would send the audio file to a transcription service
+      // But since we're working with a demo, we'll simulate transcription with real-world examples
       
-      // In a real implementation, send the audio file to a transcription service
-      // For demonstration, we'll simulate a transcription with a sample text
-      // In a production app, you'd use Whisper API or similar for transcription
+      // Generate a more realistic transcription based on the file name or use a common scam script
+      let simulatedTranscription = "";
       
-      // Simulate transcription delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (file.name.includes('recording') || file.name.includes('sample')) {
+        // Simulate different transcriptions based on file upload vs recorded content
+        const possibleScamScripts = [
+          "Hello, this is your bank's security department calling. We've detected suspicious activity on your account. To prevent further unauthorized transactions, we need to verify your identity. Please provide your account number and the last four digits of your social security number immediately.",
+          "Hi, this is Microsoft Technical Support. Our servers have detected a virus on your computer that is stealing your personal information. We need immediate access to your computer to remove this virus. Please download our remote access software now to avoid data loss.",
+          "This is the IRS. You have unpaid taxes from the past fiscal year and there is now a warrant for your arrest. To avoid immediate legal action, you must make a payment today using gift cards or wire transfer. Please call us back immediately at this number."
+        ];
+        
+        // Choose a random transcription from the possible scam scripts
+        simulatedTranscription = possibleScamScripts[Math.floor(Math.random() * possibleScamScripts.length)];
+      } else {
+        // Default transcription if it doesn't match any condition
+        simulatedTranscription = "Hello, this is a notification that your appointment has been confirmed for next Tuesday at 2pm. Please arrive 15 minutes early to complete any necessary paperwork. If you need to reschedule, please call our office at least 24 hours in advance. Thank you.";
+      }
       
-      // Use a more realistic transcription example
-      const demoTranscript = file.name.includes('sample') ? 
-        "Hi, this is your bank's security team calling. We've noticed some unusual activity on your account. We need you to verify your identity by providing your account number and password over the phone right now." :
-        "Hello, this is an automated message. Your car's extended warranty is about to expire. Press 1 now to speak with a representative about renewing your coverage before it's too late.";
-      
-      setTranscription(demoTranscript);
+      setTranscription(simulatedTranscription);
       
       // Now analyze the transcribed text with Gemini specifically for voice detection
-      await detectScam(demoTranscript, 'voice', 'en');
+      await detectScam(simulatedTranscription, 'voice', 'en');
+      
     } catch (error) {
       console.error('Error processing voice note:', error);
       toast({
@@ -123,14 +130,14 @@ const VoiceChecker = () => {
     }
   };
   
-  // Use a sample for demo purposes
+  // Use samples for demo purposes
   const handleSampleUpload = async (sampleType: 'scam' | 'legitimate') => {
     resetResult('voice');
     
     // Use realistic samples based on common voice scams
     const sampleTranscript = sampleType === 'scam' 
-      ? "This is an urgent message from the IRS. There is a lawsuit filed against your name for tax evasion. To avoid immediate arrest, call our department back at this number immediately with your social security number and banking details."
-      : "Hi there, this is Sarah from the community library. I'm calling to let you know that the book you reserved is now available for pickup. You can collect it anytime during our opening hours. Have a great day!";
+      ? "This is an urgent message from your credit card company. Your account has been compromised and multiple suspicious transactions have been detected. To secure your account, please call back immediately at this number and provide your full card details and security code for verification purposes. This is very urgent, your account will be suspended in the next hour if you don't respond."
+      : "Hello, this is Dr. Smith's office calling to confirm your appointment for next Thursday at 2:30 PM. If you need to reschedule, please call us back during our regular office hours. Thank you and have a great day!";
     
     setTranscription(sampleTranscript);
     
