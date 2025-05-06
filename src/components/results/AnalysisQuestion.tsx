@@ -48,10 +48,7 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
       const response = await askAnalysisQuestion(data.question, result);
       console.log("Received answer:", response);
       
-      if (!response || 
-          response.includes("couldn't generate an answer") || 
-          response.includes("couldn't answer this question") ||
-          response.trim() === "") {
+      if (!response || response.trim() === "") {
         toast({
           title: "Analysis Information",
           description: "I'll provide what I know about this analysis.",
@@ -109,7 +106,7 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
 
   return (
     <div>
-      <h4 className="font-medium text-sm text-muted-foreground mb-1">Ask About Analysis:</h4>
+      <h4 className="font-medium text-sm text-muted-foreground mb-1">Ask a specific question about this analysis:</h4>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmitQuestion)} className="space-y-2">
           <div className="flex gap-2">
@@ -120,7 +117,7 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
                 <FormItem className="flex-1">
                   <FormControl>
                     <Input 
-                      placeholder="Ask for specific explanations..." 
+                      placeholder="Example: Why is this suspicious? Is this message harmful?" 
                       {...field} 
                       disabled={answerLoading}
                     />
@@ -137,7 +134,7 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
               ) : (
                 <span className="flex items-center gap-1">
                   <MessageCircle className="h-4 w-4" />
-                  Explain More
+                  Get Answer
                 </span>
               )}
             </Button>

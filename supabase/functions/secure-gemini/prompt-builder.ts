@@ -30,3 +30,20 @@ export function buildTextPrompt(text) {
 
   Then provide a very short plain text explanation (max 1-2 sentences).`;
 }
+
+/**
+ * Builds a focused analysis question prompt
+ */
+export function buildAnalysisQuestionPrompt(question, content, riskLevel, explanation) {
+  return `You are analyzing a message or URL: "${content}"
+  
+  It was classified as: ${riskLevel.toUpperCase()}
+  Analysis details: ${explanation}
+  
+  Now answer this user question: "${question}"
+  
+  Keep your response VERY focused on specifically answering ONLY what was asked.
+  Respond in plain text without any prefix like "Answer:" or "Response:".
+  Limit your answer to 3-4 sentences maximum.
+  If you don't have enough information, state that directly.`;
+}

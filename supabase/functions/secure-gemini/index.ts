@@ -6,7 +6,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 // Import local modules
 import { corsHeaders, createResponse, createErrorResponse } from "./utils.ts";
 import { callGeminiAPI } from "./gemini-client.ts";
-import { buildUrlPrompt, buildTextPrompt } from "./prompt-builder.ts";
+import { buildUrlPrompt, buildTextPrompt, buildAnalysisQuestionPrompt } from "./prompt-builder.ts";
 import { processAiResponse } from "./response-parser.ts";
 import { getJob, createJob, completeJob, failJob } from "./job-manager.ts";
 
@@ -60,7 +60,7 @@ serve(async (req) => {
     console.log(`Created job ${jobId} for content type: ${detectionType}`);
     
     // Start processing in the background to avoid function timeout
-    EdgeRuntime.waitUntil(processGeminiRequest(jobId, content, detectionType, apiKey));
+    EdgeRuntime.waitUntil(processGeminiRequest(jobId, content, detectionType, apiKey, requestBody));
     
     // Return job ID immediately
     return createResponse({ jobId });
@@ -129,16 +129,22 @@ async function handleJobStatus(req) {
 /**
  * Process Gemini request asynchronously as a background task
  */
-async function processGeminiRequest(jobId, content, detectionType, apiKey) {
+async function processGeminiRequest(jobId, content, detectionType, apiKey, requestBody) {
   try {
-    // Build very simple plain text prompt
+    // Build prompt based on detection type
     let prompt = "";
-    if (detectionType === 'url') {
-      // Limit URL length for faster processing
+    
+    // Check if this is an analysis question
+    if (requestBody.question && requestBody.analysisDetails) {
+      // Extract details needed for question prompt
+      const { question, content: contentToAnalyze, riskLevel, explanation } = requestBody;
+      prompt = buildAnalysisQuestionPrompt(question, contentToAnalyze, riskLevel, explanation);
+    } else if (detectionType === 'url') {
+      // Regular URL detection
       const trimmedContent = content.length > 300 ? content.substring(0, 300) : content;
       prompt = buildUrlPrompt(trimmedContent);
     } else {
-      // Limit text content for faster processing
+      // Regular text detection
       const trimmedContent = content.length > 500 ? content.substring(0, 500) : content;
       prompt = buildTextPrompt(trimmedContent);
     }
@@ -154,17 +160,25 @@ async function processGeminiRequest(jobId, content, detectionType, apiKey) {
       
       console.log(`Response received for job ${jobId}: ${aiResponse.substring(0, 50)}...`);
       
-      // Process AI response to extract simple classification
-      const { riskLevel, confidenceLevel, explanation } = processAiResponse(aiResponse);
-
-      // Complete job with results
-      await completeJob(jobId, {
-        riskAssessment: riskLevel,
-        explanation: explanation,
-        confidenceLevel: confidenceLevel
-      });
+      // Process AI response
+      // For analysis questions, we don't need to extract risk level
+      if (requestBody.question) {
+        await completeJob(jobId, {
+          riskAssessment: requestBody.riskLevel || 'unknown',
+          explanation: aiResponse,
+          confidenceLevel: 'high'
+        });
+      } else {
+        // For regular detection, process the response to extract risk level
+        const { riskLevel, confidenceLevel, explanation } = processAiResponse(aiResponse);
+        await completeJob(jobId, {
+          riskAssessment: riskLevel,
+          explanation: explanation,
+          confidenceLevel: confidenceLevel
+        });
+      }
       
-      console.log(`Job ${jobId} completed successfully with risk level: ${riskLevel}`);
+      console.log(`Job ${jobId} completed successfully`);
     } catch (apiError) {
       console.error(`API error for job ${jobId}:`, apiError);
       await failJob(jobId, `API error: ${apiError.message || 'Unknown error'}`);

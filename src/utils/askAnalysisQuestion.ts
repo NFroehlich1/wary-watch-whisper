@@ -6,6 +6,7 @@
 import { ScamResult, GeminiOptions } from '../types';
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { getAnalysisQuestionPrompt } from "./prompt-builder";
 
 /**
  * Constants for error messages and defaults
@@ -33,7 +34,13 @@ export const askAnalysisQuestion = async (
   }
   
   try {
-    const prompt = buildAnalysisPrompt(question, result);
+    // Use the more focused question prompt
+    const prompt = getAnalysisQuestionPrompt(
+      question,
+      result.originalContent,
+      result.riskLevel,
+      result.justification || result.aiVerification || ""
+    );
     
     console.log("Sending analysis question to Gemini:", question);
     
@@ -177,7 +184,8 @@ function cleanAnswerText(text: string): string {
     "Provide a brief, focused response",
     "Format your answer to be",
     "Please answer the following question:",
-    "CLASSIFICATION:"
+    "CLASSIFICATION:",
+    "RESULT:"
   ];
   
   for (const marker of promptMarkers) {
@@ -185,7 +193,7 @@ function cleanAnswerText(text: string): string {
       // Find the position after the marker and any subsequent instructions
       const markerPos = cleanText.indexOf(marker);
       // Look for the end of the instructions section
-      const possibleEndMarkers = ["\n\n", "\nAnswer:", "\nResponse:"];
+      const possibleEndMarkers = ["\n\n", "\nAnswer:", "\nResponse:", "\n\nThe content"];
       let endPos = -1;
       
       for (const endMarker of possibleEndMarkers) {
@@ -210,35 +218,7 @@ function cleanAnswerText(text: string): string {
     cleanText = cleanText.substring(questionMatch[0].length).trim();
   }
   
-  // Make sure markdown formatting is preserved
   return cleanText;
 }
 
-/**
- * Builds a prompt for the analysis question
- * @param question - The question to ask
- * @param result - The scam detection result
- * @returns Formatted prompt string
- */
-function buildAnalysisPrompt(question: string, result: ScamResult): string {
-  const analysisContext = `
-    - Risk level: ${result.riskLevel}${result.confidenceLevel ? ` (${result.confidenceLevel} confidence)` : ''}
-    - Justification: ${result.justification}
-    - Original content: "${result.originalContent}"
-  `;
-  
-  return `
-    I analyzed a message or URL with the following details:
-    ${analysisContext}
-    
-    Please answer the following specific question about this analysis very concisely:
-    "${question}"
-    
-    Provide a focused response that directly addresses the question.
-    Format your answer using proper markdown formatting.
-    Use **bold** or *italic* text to highlight important points.
-    Your response must be specific to what was asked and brief (2-3 sentences).
-    
-    If you cannot answer the question from the given analysis, explain why in 1 sentence.
-  `;
-}
+// We don't need buildAnalysisPrompt anymore as we're using the prompt-builder
