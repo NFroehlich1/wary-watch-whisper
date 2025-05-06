@@ -32,6 +32,29 @@ export function buildTextPrompt(text) {
 }
 
 /**
+ * Builds a specialized prompt for voice message transcriptions
+ * This is more focused on phone scams and voice-specific threats
+ */
+export function buildVoicePrompt(transcription) {
+  return `Analyze this voice message transcription for signs of a scam or fraud: "${transcription}".
+  
+  Pay special attention to:
+  - Urgency or pressure tactics
+  - Requests for personal information
+  - Claims to be from banks, government, or other authorities
+  - Suspicious phone numbers or requests to call back
+  - Threats or warnings about accounts being compromised
+  
+  Respond with ONLY one of these exact classifications first:
+  RESULT: SAFE
+  RESULT: SUSPICIOUS
+  RESULT: HIGH SUSPICION
+  RESULT: SCAM
+
+  Then provide a very short plain text explanation (max 1-2 sentences).`;
+}
+
+/**
  * Builds a focused analysis question prompt
  * Optimized for faster direct answers
  * Now including the user's emoji reaction if provided

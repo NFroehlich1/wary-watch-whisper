@@ -35,6 +35,22 @@ export const getTextPromptInEnglish = (text: string): string => {
 };
 
 /**
+ * Erzeugt einen Prompt für Voice-Analyse in englischer Sprache
+ */
+export const getVoicePromptInEnglish = (transcription: string): string => {
+  return `Analyze this voice message transcription for signs of scam, fraud or phishing: "${transcription}". 
+  Pay special attention to urgency tactics, requests for personal information, and claims from authorities.
+  
+  Please respond with one of these exact classifications first:
+  RESULT: SAFE
+  RESULT: SUSPICIOUS
+  RESULT: HIGH SUSPICION
+  RESULT: SCAM
+
+  Then provide a brief plain text explanation why.`;
+};
+
+/**
  * Erzeugt einen Prompt für eine gezielte Analysefrage
  * Jetzt mit optionalem userEmoji Parameter
  */
@@ -78,6 +94,14 @@ export const getUrlPrompt = (url: string, language: Language = 'en'): string => 
 export const getTextPrompt = (text: string, language: Language = 'en'): string => {
   // Momentan nutzen wir nur englische Prompts für konsistentere AI-Ergebnisse
   return getTextPromptInEnglish(text);
+};
+
+/**
+ * Baut den Voice-Prompt entsprechend der angegebenen Sprache
+ */
+export const getVoicePrompt = (transcription: string, language: Language = 'en'): string => {
+  // Momentan nutzen wir nur englische Prompts für konsistentere AI-Ergebnisse
+  return getVoicePromptInEnglish(transcription);
 };
 
 /**

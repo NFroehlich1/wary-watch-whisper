@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useScamDetection } from '@/context/ScamDetectionContext';
 import ResultDisplay from '../results/ResultDisplay';
 import { Mic } from 'lucide-react';
+import { toast } from "@/hooks/use-toast";
 
 const VoiceChecker = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -14,6 +15,7 @@ const VoiceChecker = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
+      setTranscription(''); // Reset transcription when a new file is selected
     }
   };
   
@@ -23,25 +25,46 @@ const VoiceChecker = () => {
     
     resetResult('voice');
     try {
-      // For now we'll use a placeholder transcription until we implement the actual transcription service
-      const demoTranscript = "This is a transcription of the voice message.";
+      // In a production app, we would transcribe the audio file here
+      // For now we'll simulate transcription
+      toast({
+        title: "Transcribing audio",
+        description: "Please wait while we process your voice message...",
+      });
+      
+      // Simulate transcription delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Here we'd normally call an actual transcription service
+      const demoTranscript = "Hello, this is your bank calling. Your account has been compromised. Please provide your account details immediately for verification.";
       setTranscription(demoTranscript);
       
-      // Now analyze the text content with Gemini
-      await detectScam(demoTranscript, 'text', 'en');
+      // Now analyze the transcribed text with Gemini
+      await detectScam(demoTranscript, 'voice', 'en');
     } catch (error) {
       console.error('Error processing voice note:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process voice message",
+        variant: "destructive",
+      });
     }
   };
   
-  const handleSampleUpload = () => {
+  const handleSampleUpload = async () => {
     resetResult('voice');
-    // Use a sample English transcription for demo purposes
-    const sampleTranscript = "URGENT: Your bank requires confirmation of your data. Please call us immediately at this unknown number.";
+    
+    // Use a realistic sample transcription that could be a scam
+    const sampleTranscript = "URGENT: This is your bank security department. We've detected suspicious transactions on your account. Please call our security line immediately at this number to verify your identity and prevent further unauthorized charges.";
     setTranscription(sampleTranscript);
     
+    toast({
+      title: "Sample Loaded",
+      description: "Analyzing voice transcription...",
+    });
+    
     // Analyze the sample text with Gemini
-    detectScam(sampleTranscript, 'voice', 'en');
+    await detectScam(sampleTranscript, 'voice', 'en');
   };
   
   return (
@@ -49,7 +72,7 @@ const VoiceChecker = () => {
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Analyze Voice Messages</h2>
         <p className="text-muted-foreground">
-          Transcribe and analyze voice messages for scam patterns.
+          Transcribe and analyze voice messages for potential scam patterns.
         </p>
       </div>
       
@@ -58,8 +81,9 @@ const VoiceChecker = () => {
           variant="outline" 
           className="flex flex-col items-center justify-center h-32 w-32 rounded-full"
           onClick={handleSampleUpload}
+          disabled={loading}
         >
-          <Mic className="h-12 w-12 mb-2" />
+          <Mic className={`h-12 w-12 mb-2 ${loading ? 'animate-pulse text-primary' : ''}`} />
           <span className="text-xs">Use Sample Voice Message</span>
         </Button>
       </div>
@@ -97,6 +121,7 @@ const VoiceChecker = () => {
         <div className="mt-4 p-4 border rounded-md bg-gray-50">
           <h3 className="text-sm font-medium mb-2">Transcription:</h3>
           <p className="text-sm">{transcription}</p>
+          {loading && <div className="mt-2 text-xs text-muted-foreground">AI analysis in progress...</div>}
         </div>
       )}
       

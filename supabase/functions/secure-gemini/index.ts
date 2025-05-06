@@ -6,7 +6,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 // Import local modules
 import { corsHeaders, createResponse, createErrorResponse } from "./utils.ts";
 import { callGeminiAPI } from "./gemini-client.ts";
-import { buildUrlPrompt, buildTextPrompt, buildAnalysisQuestionPrompt } from "./prompt-builder.ts";
+import { buildUrlPrompt, buildTextPrompt, buildVoicePrompt, buildAnalysisQuestionPrompt } from "./prompt-builder.ts";
 import { processAiResponse } from "./response-parser.ts";
 import { getJob, createJob, completeJob, failJob } from "./job-manager.ts";
 
@@ -202,6 +202,10 @@ async function processGeminiRequest(jobId, content, detectionType, apiKey, reque
       // Regular URL detection
       const trimmedContent = content.length > 300 ? content.substring(0, 300) : content;
       prompt = buildUrlPrompt(trimmedContent);
+    } else if (detectionType === 'voice') {
+      // Voice transcription analysis
+      const trimmedContent = content.length > 500 ? content.substring(0, 500) : content;
+      prompt = buildVoicePrompt(trimmedContent);
     } else {
       // Regular text detection
       const trimmedContent = content.length > 500 ? content.substring(0, 500) : content;
