@@ -16,14 +16,7 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
     return 'scam';
   } else if (aiResponse.toUpperCase().includes('RESULT: HIGH SUSPICION')) {
     return 'suspicious';
-  } else if (
-    aiResponse.toUpperCase().includes('RESULT: SUSPICIOUS') &&
-    (aiResponse.toLowerCase().includes('urgent') || 
-     aiResponse.toLowerCase().includes('password') ||
-     aiResponse.toLowerCase().includes('credential') ||
-     aiResponse.toLowerCase().includes('bank details'))
-  ) {
-    // Only extract as suspicious if specific high-risk indicators are present
+  } else if (aiResponse.toUpperCase().includes('RESULT: SUSPICIOUS')) {
     return 'suspicious';
   }
   

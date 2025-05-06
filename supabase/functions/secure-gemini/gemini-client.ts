@@ -16,12 +16,12 @@ export async function callGeminiAPI(prompt: string, apiKey: string) {
   console.log('Making request to Gemini API...');
 
   try {
-    // Reduce prompt complexity by more aggressively trimming it if it's too long
-    const trimmedPrompt = prompt.length > 4000 ? prompt.substring(0, 4000) : prompt;
+    // Use a shorter prompt if too long
+    const trimmedPrompt = prompt.length > 2000 ? prompt.substring(0, 2000) : prompt;
     
-    // Create an AbortController with a longer timeout (45 seconds)
+    // Create an AbortController with a longer timeout (60 seconds)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
     
     try {
       const response = await fetch(apiUrl, {
@@ -36,10 +36,10 @@ export async function callGeminiAPI(prompt: string, apiKey: string) {
               text: trimmedPrompt
             }]
           }],
-          // More optimized parameters to improve response time and reliability
+          // Optimized parameters for faster, more reliable responses
           generationConfig: {
-            maxOutputTokens: 400, // Reduced from 800 for faster responses
-            temperature: 0.0,     // Set to 0 for most deterministic responses
+            maxOutputTokens: 300,  // Reduced for faster responses
+            temperature: 0.0,      // Set to 0 for most deterministic responses
             topP: 0.95,
             topK: 40
           }
@@ -67,12 +67,11 @@ export async function callGeminiAPI(prompt: string, apiKey: string) {
   } catch (error) {
     console.error('Error in Gemini API call:', error);
     
-    // More detailed error handling
+    // Better error handling
     if (error.name === 'AbortError') {
-      throw new Error('Gemini API request timed out after 45 seconds');
+      throw new Error('Gemini API request timed out after 60 seconds');
     }
     
-    // Better error message with type checking
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Gemini API call failed: ${errorMessage}`);
   }

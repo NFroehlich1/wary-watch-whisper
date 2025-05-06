@@ -10,14 +10,13 @@
  */
 export function buildUrlPrompt(url: string): string {
   return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". 
-  Please respond with a structured answer including one of these exact classifications at the beginning:
+  Please respond with one of these exact classifications first:
   RESULT: SAFE
   RESULT: SUSPICIOUS 
   RESULT: HIGH SUSPICION
   RESULT: SCAM
 
-  Then provide a brief analysis of why you classified it this way.
-  Use plain text, no markdown or special formatting.`;
+  Then provide a brief plain text explanation why.`;
 }
 
 /**
@@ -27,14 +26,13 @@ export function buildUrlPrompt(url: string): string {
  */
 export function buildTextPrompt(text: string): string {
   return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". 
-  Please respond with a structured answer including one of these exact classifications at the beginning:
+  Please respond with one of these exact classifications first:
   RESULT: SAFE
   RESULT: SUSPICIOUS
   RESULT: HIGH SUSPICION
   RESULT: SCAM
 
-  Then provide a brief analysis of why you classified it this way.
-  Use plain text, no special formatting.`;
+  Then provide a brief plain text explanation why.`;
 }
 
 /**
@@ -49,13 +47,8 @@ export function buildAnalysisQuestionPrompt(question: string, analysisContext: s
     I analyzed content with the following details:
     ${analysisContext}
     
-    Please answer the following specific question about this analysis very concisely:
-    "${question}"
+    Please answer this question: "${question}"
     
-    Provide a focused response that directly addresses the question.
-    Your response must be specific to what was asked and brief (2-3 sentences).
-    Use plain text, no special formatting or symbols.
-    
-    If you cannot answer the question from the given analysis, explain why in 1 sentence.
+    Keep your answer very brief (1-2 sentences).
   `;
 }

@@ -1,3 +1,4 @@
+
 // Follow Deno standards for imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
@@ -127,15 +128,15 @@ async function handleJobStatus(req, url) {
  */
 async function processGeminiRequest(jobId: string, content: string, detectionType: string, apiKey: string) {
   try {
-    // Simplify the prompt and reduce its complexity
+    // Very simple prompt with minimal content
     let prompt = "";
     if (detectionType === 'url') {
-      // Limit the URL length if it's too long
-      const trimmedContent = content.length > 500 ? content.substring(0, 500) + "..." : content;
+      // Limit the URL length 
+      const trimmedContent = content.length > 500 ? content.substring(0, 500) : content;
       prompt = buildUrlPrompt(trimmedContent);
     } else {
-      // Limit text content to reasonable size
-      const trimmedContent = content.length > 1000 ? content.substring(0, 1000) + "..." : content;
+      // Limit text content 
+      const trimmedContent = content.length > 1000 ? content.substring(0, 1000) : content;
       prompt = buildTextPrompt(trimmedContent);
     }
 
@@ -143,7 +144,7 @@ async function processGeminiRequest(jobId: string, content: string, detectionTyp
     console.log(`Content (first 50 chars): ${content.substring(0, 50)}...`);
     
     try {
-      // Call the Gemini API with the API key - AbortController is handled inside callGeminiAPI
+      // Call the Gemini API with longer timeout
       const response = await callGeminiAPI(prompt, apiKey);
       
       // Extract text from response safely
@@ -163,7 +164,7 @@ async function processGeminiRequest(jobId: string, content: string, detectionTyp
     } catch (apiError) {
       if (apiError.name === 'TimeoutError' || apiError.name === 'AbortError') {
         console.error(`API request timed out for job ${jobId}`);
-        await failJob(jobId, 'API request timed out after 40 seconds');
+        await failJob(jobId, 'API request timed out');
       } else {
         throw apiError;
       }
