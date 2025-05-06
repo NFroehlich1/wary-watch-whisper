@@ -1,38 +1,34 @@
 
 /**
- * Client für die Gemini AI API
- * Stellt eine Schnittstelle zur Verfügung, um verschiedene Inhalte zu verifizieren
+ * Client for the Gemini AI API
+ * Provides interfaces to verify different types of content
  */
 import { Language, RiskLevel } from "../types";
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-// Typdefinition für Verifikationsergebnisse
+// Type definitions for verification results
 export interface VerificationResult {
   riskAssessment: RiskLevel;
   explanation: string;
   confidenceLevel?: 'high' | 'medium' | 'low';
 }
 
-// Typdefinition für Jobstatus
+// Type definition for job status
 export interface JobStatus {
   status: 'pending' | 'completed' | 'failed';
   result?: VerificationResult;
   error?: string;
 }
 
-// Constants for timeout configuration
-const MAX_JOB_CHECK_ATTEMPTS = 20; // Maximum number of attempts to check job status
-const INITIAL_BACKOFF_MS = 500;    // Start with a 500ms wait
-const MAX_BACKOFF_MS = 5000;       // Don't wait longer than 5 seconds between attempts
-const BACKOFF_FACTOR = 1.3;        // Increase wait time by this factor with each attempt
+// Improved configuration for polling retries
+const MAX_JOB_CHECK_ATTEMPTS = 30;      // Increased max attempts
+const INITIAL_BACKOFF_MS = 500;         // Start with a 500ms wait
+const MAX_BACKOFF_MS = 5000;            // Don't wait longer than 5 seconds between attempts
+const BACKOFF_FACTOR = 1.3;             // Increase wait time by this factor with each attempt
 
 /**
- * Startet eine asynchrone Verifizierung von Inhalten über die Gemini AI
- * @param content - Der zu verifizierende Inhalt (URL oder Text)
- * @param detectionType - Art des Inhalts (URL oder Text)
- * @param language - Sprache des Inhalts zur besseren Analyse
- * @returns JobID für die spätere Abfrage des Ergebnisses
+ * Starts an asynchronous content verification using Gemini AI
  */
 export const verifyWithGemini = async (content: string, detectionType: 'url' | 'text', language: Language): Promise<{
   jobId: string;
@@ -40,14 +36,14 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
   try {
     console.log(`Starting Gemini verification for ${detectionType} content`);
     
-    // Trim content if too long to prevent timeouts
+    // Trim content early to prevent issues
     const trimmedContent = detectionType === 'url' 
-      ? content.substring(0, 500) 
-      : content.substring(0, 1000);
+      ? content.substring(0, 300) 
+      : content.substring(0, 500);
     
-    // Using a timeout promise for the function call
+    // Use a timeout promise for the function call (30 seconds)
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Function call timed out")), 15000);
+      setTimeout(() => reject(new Error("Function call timed out")), 30000);
     });
     
     try {
@@ -56,8 +52,8 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
         supabase.functions.invoke('secure-gemini', {
           body: { 
             content: trimmedContent, 
-            detectionType, 
-            language 
+            detectionType
+            // Removed language parameter as it's not used in the simplified version
           }
         }),
         timeoutPromise
@@ -68,11 +64,6 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
       
       if (error) {
         console.error('Error calling secure-gemini function:', error);
-        toast({
-          title: "AI Analysis Error",
-          description: "Could not start AI analysis. Will use built-in detection instead.",
-          variant: "destructive"
-        });
         throw new Error(`Failed to verify content: ${error.message}`);
       }
       
@@ -96,7 +87,7 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
   } catch (error) {
     console.error('Error verifying with secure Gemini function:', error);
     toast({
-      title: "AI Analysis Error",
+      title: "Verification Error",
       description: "Failed to start AI verification. Using built-in detection instead.",
       variant: "destructive"
     });
@@ -105,22 +96,20 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
 };
 
 /**
- * Ruft den Status eines Verifikationsjobs ab
- * @param jobId - Die Job-ID der Verifikationsanfrage
- * @returns Status und Ergebnis des Jobs
+ * Gets the status and result of a verification job
  */
 export const getVerificationResult = async (jobId: string): Promise<JobStatus> => {
   try {
     console.log(`Checking status for Gemini job: ${jobId}`);
     
-    // Use POST method with body instead of queryParams to pass jobId
+    // Use more reliable method to pass jobId
     const { data, error } = await supabase.functions.invoke(
       'secure-gemini/job-status',
       { 
         method: 'POST',
         body: { jobId },
         headers: {
-          'x-jobid': jobId
+          'x-jobid': jobId  // Redundant but ensures jobId is passed
         }
       }
     );

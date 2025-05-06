@@ -1,54 +1,30 @@
 
 /**
- * Functions for building prompts for the Gemini API
+ * Ultra-simplified prompt builders for the Gemini API
  */
 
 /**
- * Constructs a URL analysis prompt
- * @param url - The URL to analyze
- * @returns Formatted prompt string
+ * Builds a minimal URL analysis prompt
  */
-export function buildUrlPrompt(url: string): string {
-  return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". 
-  Please respond with one of these exact classifications first:
-  RESULT: SAFE
-  RESULT: SUSPICIOUS 
-  RESULT: HIGH SUSPICION
-  RESULT: SCAM
-
-  Then provide a brief plain text explanation why.`;
-}
-
-/**
- * Constructs a text analysis prompt
- * @param text - The text content to analyze
- * @returns Formatted prompt string
- */
-export function buildTextPrompt(text: string): string {
-  return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". 
-  Please respond with one of these exact classifications first:
+export function buildUrlPrompt(url) {
+  return `Analyze if this URL is safe or suspicious or a scam: "${url}". 
+  Respond with ONLY one of these exact classifications first:
   RESULT: SAFE
   RESULT: SUSPICIOUS
-  RESULT: HIGH SUSPICION
   RESULT: SCAM
 
-  Then provide a brief plain text explanation why.`;
+  Then provide a very short plain text explanation (max 1-2 sentences).`;
 }
 
 /**
- * Builds a detailed analysis question prompt
- * This is used when the user asks specific questions about an analysis
- * @param question - The user's question
- * @param analysisContext - The context of the original analysis
- * @returns Formatted question prompt
+ * Builds a minimal text analysis prompt
  */
-export function buildAnalysisQuestionPrompt(question: string, analysisContext: string): string {
-  return `
-    I analyzed content with the following details:
-    ${analysisContext}
-    
-    Please answer this question: "${question}"
-    
-    Keep your answer very brief (1-2 sentences).
-  `;
+export function buildTextPrompt(text) {
+  return `Analyze if this message is safe or suspicious or a scam: "${text}". 
+  Respond with ONLY one of these exact classifications first:
+  RESULT: SAFE
+  RESULT: SUSPICIOUS
+  RESULT: SCAM
+
+  Then provide a very short plain text explanation (max 1-2 sentences).`;
 }

@@ -1,20 +1,16 @@
 
 /**
- * Haupt-Module für Gemini AI Integration
- * Reexportiert Funktionen aus spezialisierten Modulen
+ * Main module for Gemini AI integration
+ * Re-exports functions from specialized modules
  */
 import { verifyWithGemini, getVerificationResult } from './gemini-client';
-import { getUrlPromptInEnglish, getTextPromptInEnglish, getUrlPrompt, getTextPrompt } from './prompt-builder';
 import { extractRiskAssessment, extractExplanation, extractConfidenceLevel } from './response-parser';
 
-// Exportiere die Haupt-Client-Funktionen
+// Export main client functions
 export { verifyWithGemini, getVerificationResult };
 
-// Exportiere Prompt-Builder-Funktionen
-export { getUrlPromptInEnglish, getTextPromptInEnglish, getUrlPrompt, getTextPrompt };
-
-// Exportiere Response-Parser-Funktionen
+// Export response-parser functions
 export { extractRiskAssessment, extractExplanation, extractConfidenceLevel };
 
-// Exportiere Typen für eine bessere Integration
+// Export types
 export type { VerificationResult, JobStatus } from './gemini-client';

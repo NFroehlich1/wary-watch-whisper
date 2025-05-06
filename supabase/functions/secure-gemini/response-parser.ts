@@ -1,18 +1,14 @@
 
 /**
- * Functions for parsing and processing Gemini AI responses
+ * Ultra-simplified response parser for Gemini API responses
  */
 
 /**
- * Processes the AI response to extract classification information
+ * Processes the AI response to extract minimal classification information
  * @param aiResponse - The raw response from Gemini
  * @returns Structured response with risk level, confidence, and explanation
  */
-export function processAiResponse(aiResponse: string): { 
-  riskLevel: string, 
-  confidenceLevel: string, 
-  explanation: string 
-} {
+export function processAiResponse(aiResponse) {
   // Default values
   let riskLevel = 'safe';
   let confidenceLevel = 'medium';
@@ -24,9 +20,6 @@ export function processAiResponse(aiResponse: string): {
   if (upperResponse.includes('RESULT: SCAM')) {
     riskLevel = 'scam';
     confidenceLevel = 'high';
-  } else if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
-    riskLevel = 'suspicious';
-    confidenceLevel = 'high';
   } else if (upperResponse.includes('RESULT: SUSPICIOUS')) {
     riskLevel = 'suspicious';
     confidenceLevel = 'medium';
@@ -36,7 +29,7 @@ export function processAiResponse(aiResponse: string): {
   }
 
   // Extract explanation (everything after the first result line)
-  const resultPattern = /RESULT:\s*(SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i;
+  const resultPattern = /RESULT:\s*(SAFE|SUSPICIOUS|SCAM)/i;
   const resultMatch = aiResponse.match(resultPattern);
   
   if (resultMatch) {
@@ -47,9 +40,9 @@ export function processAiResponse(aiResponse: string): {
     explanation = aiResponse.trim();
   }
 
-  // If explanation is too long, truncate it
-  if (explanation.length > 500) {
-    explanation = explanation.substring(0, 500) + "...";
+  // Ensure explanation isn't too long
+  if (explanation.length > 200) {
+    explanation = explanation.substring(0, 200) + "...";
   }
 
   return { riskLevel, confidenceLevel, explanation };

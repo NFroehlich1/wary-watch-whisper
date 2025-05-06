@@ -1,29 +1,28 @@
 
 /**
- * Client for making requests to the Gemini API
+ * Optimized client for making requests to the Gemini API
  */
 
 /**
- * Calls the Gemini API
+ * Calls the Gemini API with optimized settings
  * @param prompt - The prompt to send to Gemini
  * @param apiKey - The Gemini API key
  * @returns Response data from Gemini
  * @throws Error if the API call fails
  */
-export async function callGeminiAPI(prompt: string, apiKey: string) {
+export async function callGeminiAPI(prompt, apiKey) {
   const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   
-  console.log('Making request to Gemini API...');
-
+  // Make sure prompt is not too long
+  const trimmedPrompt = prompt.length > 500 ? prompt.substring(0, 500) : prompt;
+  
   try {
-    // Use a shorter prompt if too long
-    const trimmedPrompt = prompt.length > 1000 ? prompt.substring(0, 1000) : prompt;
-    
-    // Create an AbortController with a longer timeout (60 seconds)
+    // Create an AbortController with a 90-second timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
     
     try {
+      console.log("Making Gemini API request with optimized parameters");
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
@@ -36,12 +35,12 @@ export async function callGeminiAPI(prompt: string, apiKey: string) {
               text: trimmedPrompt
             }]
           }],
-          // Optimized parameters for faster, more reliable responses
+          // Super-optimized parameters for fastest possible responses
           generationConfig: {
-            maxOutputTokens: 200,  // Reduced for faster responses
-            temperature: 0.0,      // Set to 0 for most deterministic responses
-            topP: 0.95,
-            topK: 40
+            maxOutputTokens: 150,   // Very limited output size
+            temperature: 0.0,       // Zero temperature for deterministic responses
+            topP: 1.0,              // Standard setting
+            topK: 40                // Standard setting
           }
         }),
         signal: controller.signal
@@ -51,10 +50,8 @@ export async function callGeminiAPI(prompt: string, apiKey: string) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        console.error(`Gemini API error: Status ${response.status}, ${response.statusText}`);
-        const errorText = await response.text();
-        console.error(`Error response: ${errorText}`);
-        throw new Error(`Gemini API error: ${response.statusText} (${response.status})`);
+        console.error(`Gemini API error: Status ${response.status}`);
+        throw new Error(`Gemini API error: ${response.status}`);
       }
 
       const data = await response.json();
@@ -69,10 +66,9 @@ export async function callGeminiAPI(prompt: string, apiKey: string) {
     
     // Better error handling
     if (error.name === 'AbortError') {
-      throw new Error('Gemini API request timed out after 60 seconds');
+      throw new Error('API request timed out');
     }
     
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Gemini API call failed: ${errorMessage}`);
+    throw new Error(`API call failed: ${error.message || 'Unknown error'}`);
   }
 }

@@ -22,11 +22,11 @@ serve(async (req) => {
   
   // Check if this is a job status request
   if (path === 'job-status') {
-    return handleJobStatus(req, url);
+    return handleJobStatus(req);
   }
 
   try {
-    // Get the API key only from environment variables
+    // Get the API key from environment variables
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     
     console.log("Starting secure-gemini function");
@@ -41,10 +41,10 @@ serve(async (req) => {
     try {
       requestBody = await req.json();
     } catch (parseError) {
-      return createErrorResponse("Invalid JSON in request body", 400, parseError);
+      return createErrorResponse("Invalid JSON in request body", 400);
     }
     
-    const { content, detectionType, language } = requestBody;
+    const { content, detectionType } = requestBody;
     
     if (!content) {
       return createErrorResponse("Missing 'content' parameter", 400);
@@ -59,7 +59,7 @@ serve(async (req) => {
     
     console.log(`Created job ${jobId} for content type: ${detectionType}`);
     
-    // Start processing in the background
+    // Start processing in the background to avoid function timeout
     EdgeRuntime.waitUntil(processGeminiRequest(jobId, content, detectionType, apiKey));
     
     // Return job ID immediately
@@ -67,41 +67,36 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Error in secure-gemini function:", error);
-    return createErrorResponse(error.message, 500, error);
+    return createErrorResponse(error.message, 500);
   }
 });
 
 /**
  * Handle job status request - standardized parameter handling
  * @param req - Request object
- * @param url - URL object already parsed
  * @returns Response with job status and result
  */
-async function handleJobStatus(req, url) {
+async function handleJobStatus(req) {
   try {
     let jobId = null;
     
     // Try to get jobId from multiple sources
-    
-    // Option 1: Get jobId from request body (for POST requests)
     try {
       const body = await req.json();
       if (body && body.jobId) {
         jobId = body.jobId;
-        console.log('Retrieved jobId from request body:', jobId);
       }
     } catch (e) {
-      console.error('Error parsing request body:', e);
+      // If body parsing fails, try other methods
     }
     
-    // Option 2: Get jobId from x-jobid header (fallback)
+    // If jobId not found in body, try headers
     if (!jobId && req.headers.has('x-jobid')) {
       jobId = req.headers.get('x-jobid');
-      console.log('Retrieved jobId from x-jobid header:', jobId);
     }
     
     if (!jobId) {
-      return createErrorResponse("Missing jobId parameter. Please provide jobId in body or header.", 400);
+      return createErrorResponse("Missing jobId parameter", 400);
     }
     
     console.log(`Handling job status request for job: ${jobId}`);
@@ -115,62 +110,55 @@ async function handleJobStatus(req, url) {
     return createResponse(job);
   } catch (error) {
     console.error("Error fetching job status:", error);
-    return createErrorResponse("Error fetching job status", 500, error);
+    return createErrorResponse("Error fetching job status", 500);
   }
 }
 
 /**
- * Process Gemini request asynchronously
- * @param jobId - Job ID
- * @param content - Content to analyze
- * @param detectionType - Type of detection
- * @param apiKey - Gemini API key
+ * Process Gemini request asynchronously as a background task
  */
-async function processGeminiRequest(jobId: string, content: string, detectionType: string, apiKey: string) {
+async function processGeminiRequest(jobId, content, detectionType, apiKey) {
   try {
-    // Very simple prompt with minimal content
+    // Build very simple plain text prompt
     let prompt = "";
     if (detectionType === 'url') {
-      // Limit the URL length 
-      const trimmedContent = content.length > 500 ? content.substring(0, 500) : content;
+      // Limit URL length for faster processing
+      const trimmedContent = content.length > 300 ? content.substring(0, 300) : content;
       prompt = buildUrlPrompt(trimmedContent);
     } else {
-      // Limit text content 
-      const trimmedContent = content.length > 1000 ? content.substring(0, 1000) : content;
+      // Limit text content for faster processing
+      const trimmedContent = content.length > 500 ? content.substring(0, 500) : content;
       prompt = buildTextPrompt(trimmedContent);
     }
 
     console.log(`Processing Gemini API call for job ${jobId}`);
-    console.log(`Content (first 50 chars): ${content.substring(0, 50)}...`);
     
     try {
-      // Call the Gemini API with longer timeout
+      // Call the Gemini API with timeout handling
       const response = await callGeminiAPI(prompt, apiKey);
       
       // Extract text from response safely
-      const aiResponse = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const aiResponse = response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
       
-      console.log(`Response preview for job ${jobId}: ${aiResponse.substring(0, 100)}...`);
+      console.log(`Response received for job ${jobId}: ${aiResponse.substring(0, 50)}...`);
       
-      // Process the AI response to extract classification and explanation
+      // Process AI response to extract simple classification
       const { riskLevel, confidenceLevel, explanation } = processAiResponse(aiResponse);
 
-      // Update job with result in database
+      // Complete job with results
       await completeJob(jobId, {
         riskAssessment: riskLevel,
         explanation: explanation,
         confidenceLevel: confidenceLevel
       });
+      
+      console.log(`Job ${jobId} completed successfully with risk level: ${riskLevel}`);
     } catch (apiError) {
-      if (apiError.name === 'TimeoutError' || apiError.name === 'AbortError') {
-        console.error(`API request timed out for job ${jobId}`);
-        await failJob(jobId, 'API request timed out');
-      } else {
-        throw apiError;
-      }
+      console.error(`API error for job ${jobId}:`, apiError);
+      await failJob(jobId, `API error: ${apiError.message || 'Unknown error'}`);
     }
   } catch (error) {
     console.error(`Error processing job ${jobId}:`, error);
-    await failJob(jobId, error instanceof Error ? error.message : String(error));
+    await failJob(jobId, `Processing error: ${error.message || 'Unknown error'}`);
   }
 }

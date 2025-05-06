@@ -7,6 +7,7 @@ import { mockUrlCheck, mockTextCheck, mockVoiceCheck } from '../utils/mockDetect
 import { playAudioFromResult } from '../utils/textToSpeech';
 import { askAnalysisQuestion as askQuestion } from '../utils/askAnalysisQuestion';
 import { ScamDetectionContextType } from './types';
+import { toast } from "@/hooks/use-toast";
 
 const ScamDetectionContext = createContext<ScamDetectionContextType | undefined>(undefined);
 
@@ -18,11 +19,11 @@ export const useScamDetection = () => {
   return context;
 };
 
-// Constants for exponential backoff
-const MAX_JOB_CHECK_ATTEMPTS = 20; // Increased max attempts for more patience
-const INITIAL_BACKOFF_MS = 500;    // Start with a 500ms wait
-const MAX_BACKOFF_MS = 5000;       // Don't wait longer than 5 seconds between attempts
-const BACKOFF_FACTOR = 1.3;        // Increase wait time by this factor with each attempt
+// Improved configuration for polling retries
+const MAX_JOB_CHECK_ATTEMPTS = 40;      // Significantly increased max attempts
+const INITIAL_BACKOFF_MS = 500;         // Start with a 500ms wait
+const MAX_BACKOFF_MS = 8000;            // Maximum 8 second delay between attempts
+const BACKOFF_FACTOR = 1.2;             // More moderate growth factor
 
 export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(false);
@@ -47,15 +48,12 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
     return Math.min(backoffTime, MAX_BACKOFF_MS);
   };
   
-  // In a real app, this would make API calls to your backend
+  // Detect scam content
   const detectScam = async (content: string | File, type: DetectionType, language?: Language) => {
     setLoading(true);
     
     try {
-      // Simulate API delay - reduced to improve responsiveness
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Initialize with default results in case AI analysis fails
+      // Begin with the mock detection results as fallback
       let detectedRisk: ScamResult;
       
       if (type === 'url') {
@@ -66,18 +64,25 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
         detectedRisk = mockVoiceCheck();
       }
       
-      // If Gemini is enabled and it's a text or URL check, use it as the primary classifier
+      // If Gemini is enabled and it's a text or URL check, use it
       if (geminiOptions.enabled && (type === 'url' || type === 'text')) {
         try {
           const contentToVerify = content as string;
           
-          // Get jobId
+          // Show loading toast to let user know AI is working
+          const loadingToastId = toast({
+            title: "AI Analysis",
+            description: "Starting AI verification...",
+            duration: 2000,
+          });
+          
+          // Get jobId from the Edge Function
           const { jobId } = await verifyWithGemini(
             contentToVerify, 
             type, 
             detectedRisk.detectedLanguage
           );
-          
+
           // Now check for job completion with improved exponential backoff
           let jobComplete = false;
           let attempts = 0;
@@ -96,16 +101,42 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
               if (jobStatus.status === 'completed' && jobStatus.result) {
                 jobComplete = true;
                 geminiResult = jobStatus.result;
+                toast({
+                  title: "AI Analysis Complete",
+                  description: `Analysis completed in ${attempts} attempts`,
+                  duration: 3000,
+                });
                 break;
               } else if (jobStatus.status === 'failed') {
                 console.error('Gemini verification failed:', jobStatus.error);
+                toast({
+                  title: "AI Analysis Failed",
+                  description: "Falling back to built-in detection",
+                  variant: "destructive",
+                });
                 break;
               }
-              // If still pending, we'll try again in the next iteration
+              // If still pending, continue to the next attempt
+              
+              // Every 15 attempts, show a progress toast
+              if (attempts % 10 === 0) {
+                toast({
+                  title: "AI Analysis In Progress",
+                  description: `Still analyzing... (attempt ${attempts}/${MAX_JOB_CHECK_ATTEMPTS})`,
+                  duration: 2000,
+                });
+              }
             } catch (statusError) {
-              // If we get an error checking status, log it but continue trying
               console.error(`Error checking job ${jobId} status (attempt ${attempts}):`, statusError);
-              // Don't break the loop - we'll try again after the backoff delay
+              // Don't break - try again after backoff delay
+              if (attempts % 5 === 0) {
+                toast({
+                  title: "Connection Issue",
+                  description: "Retrying connection to AI service...",
+                  variant: "destructive",
+                  duration: 2000,
+                });
+              }
             }
           }
           
@@ -114,21 +145,34 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
             detectedRisk.riskLevel = geminiResult.riskAssessment;
             detectedRisk.confidenceLevel = geminiResult.confidenceLevel;
             detectedRisk.justification = geminiResult.explanation;
-            detectedRisk.aiVerification = `Gemini AI analyzed this content as ${geminiResult.riskAssessment.toUpperCase()}${geminiResult.confidenceLevel ? ` (${geminiResult.confidenceLevel} confidence)` : ''}: ${geminiResult.explanation}`;
+            detectedRisk.aiVerification = `AI analysis: ${geminiResult.riskAssessment.toUpperCase()}\n\n${geminiResult.explanation}`;
           } else {
-            detectedRisk.aiVerification = "Gemini AI analysis timed out or failed. Using built-in detection instead.";
+            detectedRisk.aiVerification = "AI analysis timed out. Using built-in detection instead.";
+            toast({
+              title: "AI Analysis Timed Out",
+              description: "Using built-in detection as fallback",
+              variant: "destructive",
+            });
           }
         } catch (error) {
           console.error('Gemini verification error:', error);
-          // If AI analysis fails, we'll fall back to the mock results
-          detectedRisk.aiVerification = "Gemini AI analysis failed. Using built-in detection instead.";
+          detectedRisk.aiVerification = "AI analysis failed. Using built-in detection instead.";
+          toast({
+            title: "AI Analysis Error",
+            description: "Using built-in detection as fallback",
+            variant: "destructive",
+          });
         }
       }
       
       setResult(detectedRisk);
     } catch (error) {
       console.error('Detection error:', error);
-      // Handle error state
+      toast({
+        title: "Detection Error",
+        description: "An error occurred during analysis",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
