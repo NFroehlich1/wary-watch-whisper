@@ -36,14 +36,15 @@ export function buildTextPrompt(text) {
  * This is more focused on phone scams and voice-specific threats
  */
 export function buildVoicePrompt(transcription) {
-  return `Analyze this voice message transcription for signs of a scam or fraud: "${transcription}".
+  return `Analyze this voice message transcription for signs of a scam, fraud or social engineering: "${transcription}".
   
   Pay special attention to:
-  - Urgency or pressure tactics
-  - Requests for personal information
-  - Claims to be from banks, government, or other authorities
-  - Suspicious phone numbers or requests to call back
-  - Threats or warnings about accounts being compromised
+  - Urgency or pressure tactics ("act now", "immediate action required")
+  - Requests for personal information (account details, passwords, SSN)
+  - Claims to be from banks, government agencies, or tech companies
+  - Warnings about accounts being compromised or legal consequences
+  - Suspicious callback numbers or unusual payment methods mentioned
+  - Offers that sound too good to be true
   
   Respond with ONLY one of these exact classifications first:
   RESULT: SAFE
@@ -51,7 +52,7 @@ export function buildVoicePrompt(transcription) {
   RESULT: HIGH SUSPICION
   RESULT: SCAM
 
-  Then provide a very short plain text explanation (max 1-2 sentences).`;
+  Then provide a very short plain text explanation (max 1-2 sentences) focusing on why you made this determination.`;
 }
 
 /**

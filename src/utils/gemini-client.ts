@@ -30,7 +30,7 @@ const BACKOFF_FACTOR = 1.3;             // Increase wait time by this factor wit
 /**
  * Starts an asynchronous content verification using Gemini AI
  */
-export const verifyWithGemini = async (content: string, detectionType: 'url' | 'text', language: Language): Promise<{
+export const verifyWithGemini = async (content: string, detectionType: 'url' | 'text' | 'voice', language: Language): Promise<{
   jobId: string;
 }> => {
   try {

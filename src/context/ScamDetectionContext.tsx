@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { ScamResult, DetectionType, Language, GeminiOptions } from '../types';
 import { verifyWithGemini, getVerificationResult } from '../utils/gemini';
@@ -7,6 +8,7 @@ import { playAudioFromResult } from '../utils/textToSpeech';
 import { askAnalysisQuestion as askQuestion } from '../utils/askAnalysisQuestion';
 import { ScamDetectionContextType } from './types';
 import { toast } from "@/hooks/use-toast";
+import { getVoicePrompt } from '../utils/prompt-builder';
 
 const ScamDetectionContext = createContext<ScamDetectionContextType | undefined>(undefined);
 
@@ -67,15 +69,15 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
         detectedRisk = mockVoiceCheck();
       }
       
-      // If Gemini is enabled and it's a text or URL check, use it
-      if (geminiOptions.enabled && (type === 'url' || type === 'text')) {
+      // If Gemini is enabled, use it for all detection types including voice
+      if (geminiOptions.enabled) {
         try {
           const contentToVerify = content as string;
           
           // Show loading toast to let user know AI is working
           const loadingToastId = toast({
             title: "AI Analysis",
-            description: "Starting AI verification...",
+            description: `Starting AI verification for ${type === 'voice' ? 'voice message' : type}...`,
             duration: 2000,
           });
           
@@ -159,7 +161,13 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
             detectedRisk.riskLevel = geminiResult.riskAssessment;
             detectedRisk.confidenceLevel = geminiResult.confidenceLevel;
             detectedRisk.justification = geminiResult.explanation;
-            detectedRisk.aiVerification = `AI analysis: ${geminiResult.riskAssessment.toUpperCase()}\n\n${geminiResult.explanation}`;
+            
+            // Add more detailed AI verification explanation based on detection type
+            if (type === 'voice') {
+              detectedRisk.aiVerification = `Voice Analysis: ${geminiResult.riskAssessment.toUpperCase()}\n\n${geminiResult.explanation}\n\nThis analysis is based on the speech patterns and content detected in the voice message.`;
+            } else {
+              detectedRisk.aiVerification = `AI analysis: ${geminiResult.riskAssessment.toUpperCase()}\n\n${geminiResult.explanation}`;
+            }
           } else {
             detectedRisk.aiVerification = "AI analysis unavailable. Using built-in detection instead.";
             toast({
