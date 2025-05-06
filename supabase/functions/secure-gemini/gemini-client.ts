@@ -1,5 +1,4 @@
 
-
 /**
  * Client for making requests to the Gemini API
  */
@@ -17,6 +16,9 @@ export async function callGeminiAPI(prompt: string, apiKey: string) {
   console.log('Making request to Gemini API...');
 
   try {
+    // Reduce prompt complexity if it's too long
+    const trimmedPrompt = prompt.length > 8000 ? prompt.substring(0, 8000) : prompt;
+    
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -26,16 +28,19 @@ export async function callGeminiAPI(prompt: string, apiKey: string) {
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: prompt
+            text: trimmedPrompt
           }]
         }],
-        // Adding parameters to improve response time
+        // Optimized parameters to improve response time and reliability
         generationConfig: {
-          maxOutputTokens: 1000,
-          temperature: 0.2,
-          topP: 0.95
+          maxOutputTokens: 800,
+          temperature: 0.1,
+          topP: 0.9,
+          topK: 40
         }
-      })
+      }),
+      // Add longer timeout to the fetch request - 40 seconds instead of default 
+      signal: AbortSignal.timeout(40000)
     });
 
     if (!response.ok) {
@@ -49,7 +54,8 @@ export async function callGeminiAPI(prompt: string, apiKey: string) {
     return data;
   } catch (error) {
     console.error('Error in Gemini API call:', error);
-    throw new Error(`Gemini API call failed: ${error.message || 'Unknown error'}`);
+    // Better error message with type checking
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Gemini API call failed: ${errorMessage}`);
   }
 }
-

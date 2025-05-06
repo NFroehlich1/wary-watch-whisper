@@ -55,23 +55,24 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
         try {
           const contentToVerify = content as string;
           
-          // Fix: First get jobId
+          // Get jobId
           const { jobId } = await verifyWithGemini(
             contentToVerify, 
             type, 
             detectedRisk.detectedLanguage
           );
           
-          // Now check for job completion (in real app, we would poll)
+          // Now check for job completion with improved exponential backoff
           let jobComplete = false;
           let attempts = 0;
-          let maxAttempts = 10;
+          let maxAttempts = 12; // Increased max attempts
           let geminiResult;
           
           while (!jobComplete && attempts < maxAttempts) {
             attempts++;
-            // Wait 1 second between checks
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Use exponential backoff: wait longer between retries
+            const backoffTime = Math.min(1000 * Math.pow(1.5, attempts-1), 10000); // Max 10 seconds between attempts
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
             
             const jobStatus = await getVerificationResult(jobId);
             

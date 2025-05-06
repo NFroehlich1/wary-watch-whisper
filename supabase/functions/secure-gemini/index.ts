@@ -1,5 +1,4 @@
 
-
 // Follow Deno standards for imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
@@ -73,57 +72,46 @@ serve(async (req) => {
 });
 
 /**
- * Handle job status request
+ * Handle job status request - standardized parameter handling
  * @param req - Request object
  * @param url - URL object already parsed
  * @returns Response with job status and result
  */
 async function handleJobStatus(req, url) {
   try {
-    // Get all possible sources for jobId
-    const params = url.searchParams;
-    const headerParams = req.headers.get('x-urlencoded-params');
+    let jobId = null;
     
-    console.log('URL search params:', Object.fromEntries(params.entries()));
-    console.log('Header x-urlencoded-params:', headerParams);
-    
-    // Try to get jobId from multiple sources
-    let jobId = params.get('jobId');
-    
-    if (!jobId && headerParams) {
+    // Option 1: Get jobId from URL search params (standard approach)
+    if (url.searchParams.has('jobId')) {
+      jobId = url.searchParams.get('jobId');
+      console.log('Retrieved jobId from URL params:', jobId);
+    }
+    // Option 2: Get jobId from request body (used for POST requests)
+    else if (req.method === 'POST') {
       try {
-        const parsedParams = JSON.parse(headerParams);
-        jobId = parsedParams.jobId;
-        console.log('Successfully parsed jobId from JSON header:', jobId);
+        const body = await req.json();
+        jobId = body.jobId;
+        console.log('Retrieved jobId from request body:', jobId);
       } catch (e) {
-        console.error('Error parsing x-urlencoded-params:', e);
-        // Try to parse as URL encoded string
-        try {
-          const urlParams = new URLSearchParams(headerParams);
-          jobId = urlParams.get('jobId');
-          console.log('Successfully parsed jobId from URL params:', jobId);
-        } catch (urlError) {
-          console.error('Error parsing as URL params:', urlError);
-        }
+        console.error('Error parsing request body:', e);
       }
     }
-    
-    // Fallback to x-jobid header
-    if (!jobId) {
+    // Option 3: Get jobId from x-jobid header (fallback)
+    else if (req.headers.has('x-jobid')) {
       jobId = req.headers.get('x-jobid');
-      console.log('Using x-jobid header:', jobId);
+      console.log('Retrieved jobId from x-jobid header:', jobId);
+    }
+    
+    if (!jobId) {
+      return createErrorResponse("Missing jobId parameter. Please provide jobId in URL, body or header.", 400);
     }
     
     console.log(`Handling job status request for job: ${jobId}`);
     
-    if (!jobId) {
-      return createErrorResponse("Missing jobId parameter", 400);
-    }
-    
     const job = await getJob(jobId);
     
     if (!job) {
-      return createErrorResponse("Job not found", 404);
+      return createErrorResponse(`Job with ID '${jobId}' not found`, 404);
     }
     
     return createResponse(job);
@@ -142,26 +130,26 @@ async function handleJobStatus(req, url) {
  */
 async function processGeminiRequest(jobId: string, content: string, detectionType: string, apiKey: string) {
   try {
-    // Determine the appropriate prompt based on detection type
+    // Simplify the prompt and reduce its complexity
     let prompt = "";
     if (detectionType === 'url') {
-      prompt = buildUrlPrompt(content);
+      // Limit the URL length if it's too long
+      const trimmedContent = content.length > 500 ? content.substring(0, 500) + "..." : content;
+      prompt = buildUrlPrompt(trimmedContent);
     } else {
-      prompt = buildTextPrompt(content);
+      // Limit text content to reasonable size
+      const trimmedContent = content.length > 1000 ? content.substring(0, 1000) + "..." : content;
+      prompt = buildTextPrompt(trimmedContent);
     }
 
     console.log(`Processing Gemini API call for job ${jobId}`);
     console.log(`Content (first 50 chars): ${content.substring(0, 50)}...`);
     
-    // Add a timeout to the fetch request
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-    
     try {
-      // Call the Gemini API with the API key
+      // Call the Gemini API with the API key - AbortController is handled inside callGeminiAPI
       const response = await callGeminiAPI(prompt, apiKey);
-      clearTimeout(timeoutId);
       
+      // Extract text from response safely
       const aiResponse = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
       
       console.log(`Response preview for job ${jobId}: ${aiResponse.substring(0, 100)}...`);
@@ -176,16 +164,15 @@ async function processGeminiRequest(jobId: string, content: string, detectionTyp
         confidenceLevel: confidenceLevel
       });
     } catch (apiError) {
-      if (apiError.name === 'AbortError') {
+      if (apiError.name === 'TimeoutError' || apiError.name === 'AbortError') {
         console.error(`API request timed out for job ${jobId}`);
-        await failJob(jobId, 'API request timed out after 30 seconds');
+        await failJob(jobId, 'API request timed out after 40 seconds');
       } else {
         throw apiError;
       }
     }
   } catch (error) {
     console.error(`Error processing job ${jobId}:`, error);
-    await failJob(jobId, error);
+    await failJob(jobId, error instanceof Error ? error.message : String(error));
   }
 }
-

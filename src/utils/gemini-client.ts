@@ -35,30 +35,42 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
     console.log(`Starting Gemini verification for ${detectionType} content`);
     
     // Aufruf der sicheren Supabase Edge Function, um den Job zu starten
-    const { data, error } = await supabase.functions.invoke('secure-gemini', {
-      body: { content, detectionType, language }
-    });
+    // Use a reasonable timeout for the function call
+    const functionCallController = new AbortController();
+    const functionCallTimeout = setTimeout(() => functionCallController.abort(), 15000);
     
-    if (error) {
-      console.error('Error calling secure-gemini function:', error);
-      toast({
-        title: "AI Analysis Error",
-        description: "Could not start AI analysis. Will use built-in detection instead.",
-        variant: "destructive"
+    try {
+      const { data, error } = await supabase.functions.invoke('secure-gemini', {
+        body: { content, detectionType, language },
+        signal: functionCallController.signal
       });
-      throw new Error(`Failed to verify content: ${error.message}`);
+      
+      clearTimeout(functionCallTimeout);
+      
+      if (error) {
+        console.error('Error calling secure-gemini function:', error);
+        toast({
+          title: "AI Analysis Error",
+          description: "Could not start AI analysis. Will use built-in detection instead.",
+          variant: "destructive"
+        });
+        throw new Error(`Failed to verify content: ${error.message}`);
+      }
+      
+      if (!data || !data.jobId) {
+        console.error('Invalid response from secure-gemini function, missing jobId');
+        throw new Error(`Invalid response from secure-gemini function`);
+      }
+      
+      console.log(`Gemini verification job created with ID: ${data.jobId}`);
+      
+      return {
+        jobId: data.jobId
+      };
+    } catch (functionError) {
+      clearTimeout(functionCallTimeout);
+      throw functionError;
     }
-    
-    if (!data || !data.jobId) {
-      console.error('Invalid response from secure-gemini function, missing jobId');
-      throw new Error(`Invalid response from secure-gemini function`);
-    }
-    
-    console.log(`Gemini verification job created with ID: ${data.jobId}`);
-    
-    return {
-      jobId: data.jobId
-    };
   } catch (error) {
     console.error('Error verifying with secure Gemini function:', error);
     toast({
@@ -79,16 +91,13 @@ export const getVerificationResult = async (jobId: string): Promise<JobStatus> =
   try {
     console.log(`Checking status for Gemini job: ${jobId}`);
     
-    // First try with JSON encoded parameters
-    const encodedParams = JSON.stringify({ jobId });
-    console.log(`Using encoded params: ${encodedParams}`);
-    
+    // Use URL parameters for jobId - simplest and most reliable approach
     const { data, error } = await supabase.functions.invoke(
       'secure-gemini/job-status',
       { 
         method: 'GET',
+        queryParams: { jobId },
         headers: {
-          'x-urlencoded-params': encodedParams,
           'x-jobid': jobId // Backup method
         }
       }
