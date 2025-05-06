@@ -35,30 +35,6 @@ export const getTextPromptInEnglish = (text: string): string => {
 };
 
 /**
- * Creates a specialized prompt for voice message transcription analysis
- * This includes specific patterns and indicators common in phone/voice scams
- */
-export const getVoicePromptInEnglish = (transcription: string): string => {
-  return `Analyze this voice message transcription for signs of scam, fraud or phishing: "${transcription}". 
-  
-  Pay special attention to:
-  - Urgency tactics or pressure ("act now", "immediate", "urgent")
-  - Claims to be from government, banks, or tech companies
-  - Requests for personal information, account details, or payments
-  - Threats of legal action, arrest, or account suspension
-  - Unusual callback numbers or payment methods
-  - Too-good-to-be-true offers or prizes
-  
-  Please respond with one of these exact classifications first:
-  RESULT: SAFE
-  RESULT: SUSPICIOUS
-  RESULT: HIGH SUSPICION
-  RESULT: SCAM
-
-  Then provide a brief plain text explanation why, focusing on the specific scam techniques used (if any).`;
-};
-
-/**
  * Creates a prompt for a targeted analysis question
  * Now with optional userEmoji parameter
  */
@@ -102,14 +78,6 @@ export const getUrlPrompt = (url: string, language: Language = 'en'): string => 
 export const getTextPrompt = (text: string, language: Language = 'en'): string => {
   // Currently we only use English prompts for more consistent AI results
   return getTextPromptInEnglish(text);
-};
-
-/**
- * Builds the voice prompt according to the specified language
- */
-export const getVoicePrompt = (transcription: string, language: Language = 'en'): string => {
-  // Currently we only use English prompts for more consistent AI results
-  return getVoicePromptInEnglish(transcription);
 };
 
 /**

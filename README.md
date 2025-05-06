@@ -36,7 +36,6 @@ It analyzes:
 
 * 🔗 **URLs**  
 * 📝 **Text messages**  
-* 🎤 **Voice notes**
 
 and returns a detailed, transparent assessment of potential threats.
 
@@ -46,7 +45,7 @@ and returns a detailed, transparent assessment of potential threats.
 
 | Category | Details |
 |----------|---------|
-| **Detection** | • URL analysis<br>• Text analysis<br>• Voice‑note analysis |
+| **Detection** | • URL analysis<br>• Text analysis |
 | **AI** | • Google Gemini‑powered verification<br>• Real‑time threat scores<br>• Human‑readable justifications<br>• Interactive follow‑up Q&A |
 | **Languages** | English, Spanish, French, German, and more |
 | **Results** | • Risk level (Safe / Suspicious / Scam)<br>• Explanation<br>• Detected language<br>• Timestamp<br>• "Ask again" option |
@@ -85,12 +84,10 @@ Server-side operations are handled by:
 
 * **Edge Functions:**
   * **secure-gemini** — Proxies requests to Google Gemini AI, protecting API keys
-  * **speech-to-text** — Handles voice transcription processing
   * **secure-storage** — Manages anonymized analytics data
 
 * **External Services:**
   * **Google Gemini AI** — Powers the advanced content verification
-  * **Web Speech API** — Provides text-to-speech and speech-to-text capabilities
 
 ### Security <a name="security"></a>
 
@@ -177,7 +174,6 @@ All sensitive API keys are stored securely as Supabase secrets and accessed only
 
 1. **URL Checker** — paste any link to scan domain, path patterns, and phishing markers.  
 2. **Text Analyzer** — drop a message; we flag urgency cues, data‑harvest attempts, etc.  
-3. **Voice Note Analyzer** — upload audio (FLAC / WAV / MP3). We transcribe and analyze the text.  
 
 Results include:
 
@@ -196,7 +192,6 @@ Results include:
 | Endpoint | Purpose | Request Format | Response Format |
 |----------|---------|----------------|-----------------|
 | **/secure-gemini** | AI content analysis | `{ content, detectionType, language }` | `{ riskAssessment, explanation, confidenceLevel }` |
-| **/speech-to-text** | Audio transcription | `{ audio }` (base64) | `{ text }` |
 | **/secure-storage** | Analytics storage | `{ eventType, data }` | `{ success, id }` |
 
 These endpoints are securely accessible through the Supabase client:
