@@ -1,4 +1,3 @@
-
 import { ScamResult, Language } from '../types';
 import { detectTextLanguage } from './language';
 
@@ -94,77 +93,6 @@ export const mockTextCheck = (text: string, language?: Language): ScamResult => 
     originalContent: text,
     timestamp: new Date().toISOString(),
     confidenceLevel: isScam ? 'high' : isVerySuspicious ? 'high' : isSuspicious ? 'medium' : 'high'
-  };
-};
-
-export const mockVoiceCheck = (transcription: string = ""): ScamResult => {
-  // Enhanced voice analysis with specific check patterns
-  const detectedLanguage = detectTextLanguage(transcription);
-  
-  // Voice-specific scam indicators
-  const hasUrgency = transcription.toLowerCase().includes('urgent') || 
-                    transcription.toLowerCase().includes('immediately') ||
-                    transcription.toLowerCase().includes('right away') ||
-                    transcription.toLowerCase().includes('emergency');
-                    
-  const hasPersonalInfoRequest = transcription.toLowerCase().includes('social security') ||
-                                transcription.toLowerCase().includes('account number') ||
-                                transcription.toLowerCase().includes('credit card') ||
-                                transcription.toLowerCase().includes('password') ||
-                                transcription.toLowerCase().includes('pin');
-                                
-  const hasThreat = transcription.toLowerCase().includes('arrest') ||
-                   transcription.toLowerCase().includes('lawsuit') ||
-                   transcription.toLowerCase().includes('police') ||
-                   transcription.toLowerCase().includes('legal action');
-                   
-  const hasAuthority = transcription.toLowerCase().includes('irs') ||
-                      transcription.toLowerCase().includes('bank') ||
-                      transcription.toLowerCase().includes('microsoft') ||
-                      transcription.toLowerCase().includes('tech support') ||
-                      transcription.toLowerCase().includes('amazon');
-  
-  // Combine factors for better accuracy
-  const isScam = (hasPersonalInfoRequest && hasUrgency) ||
-                (hasAuthority && hasPersonalInfoRequest) ||
-                (hasThreat && hasUrgency);
-  
-  const isSuspicious = (hasAuthority && hasUrgency) ||
-                      (hasPersonalInfoRequest) ||
-                      (hasThreat);
-  
-  let riskLevel: 'scam' | 'suspicious' | 'safe' = 'safe';
-  let explanation = "This voice message appears to be legitimate with no concerning patterns.";
-  
-  if (isScam) {
-    riskLevel = 'scam';
-    explanation = "This message contains multiple scam indicators: " + 
-                  (hasPersonalInfoRequest ? "requests for personal information, " : "") +
-                  (hasUrgency ? "urgent action required, " : "") +
-                  (hasThreat ? "threats or intimidation, " : "") +
-                  (hasAuthority ? "impersonation of authority. " : "");
-                  
-    explanation = explanation.trimEnd();
-    explanation = explanation.endsWith(",") ? explanation.slice(0, -1) + "." : explanation;
-  } else if (isSuspicious) {
-    riskLevel = 'suspicious';
-    explanation = "This message contains some concerning elements that could indicate a scam: " + 
-                 (hasPersonalInfoRequest ? "asking for personal information, " : "") +
-                 (hasUrgency ? "creating a sense of urgency, " : "") +
-                 (hasThreat ? "using threatening language, " : "") +
-                 (hasAuthority ? "claiming to be from a trusted organization. " : "");
-                 
-    explanation = explanation.trimEnd();
-    explanation = explanation.endsWith(",") ? explanation.slice(0, -1) + "." : explanation;
-  }
-  
-  return {
-    riskLevel,
-    justification: explanation,
-    detectedLanguage,
-    originalContent: transcription || "Voice transcription analysis",
-    timestamp: new Date().toISOString(),
-    confidenceLevel: isScam ? 'high' : isSuspicious ? 'medium' : 'high'
   };
 };
 

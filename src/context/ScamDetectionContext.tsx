@@ -1,14 +1,12 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { ScamResult, DetectionType, Language, GeminiOptions } from '../types';
 import { verifyWithGemini, getVerificationResult } from '../utils/gemini';
 import { detectTextLanguage } from '../utils/language';
-import { mockUrlCheck, mockTextCheck, mockVoiceCheck } from '../utils/mockDetectors';
+import { mockUrlCheck, mockTextCheck } from '../utils/mockDetectors';
 import { playAudioFromResult } from '../utils/textToSpeech';
 import { askAnalysisQuestion as askQuestion } from '../utils/askAnalysisQuestion';
 import { ScamDetectionContextType } from './types';
 import { toast } from "@/hooks/use-toast";
-import { getVoicePrompt } from '../utils/prompt-builder';
 
 const ScamDetectionContext = createContext<ScamDetectionContextType | undefined>(undefined);
 
@@ -66,7 +64,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
       } else if (type === 'text') {
         detectedRisk = mockTextCheck(content as string, language);
       } else {
-        detectedRisk = mockVoiceCheck();
+        detectedRisk = mockTextCheck(""); // Replace mockVoiceCheck with mockTextCheck for fallback
       }
       
       // If Gemini is enabled, use it for all detection types including voice
