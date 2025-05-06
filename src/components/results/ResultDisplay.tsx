@@ -44,8 +44,8 @@ const ResultDisplay = () => {
           <strong>Note:</strong> This analysis serves only as guidance. Final judgment should always be based on your own discretion.
         </div>
         
-        <div>
-          <ReactMarkdown className="prose prose-sm max-w-none dark:prose-invert">
+        <div className="prose prose-sm max-w-none dark:prose-invert">
+          <ReactMarkdown className="markdown-content">
             {getVerificationText()}
           </ReactMarkdown>
         </div>

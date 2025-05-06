@@ -59,8 +59,11 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
         });
         
         // Provide a fallback response based on the analysis data we already have
-        setAnswer(`This content was classified as ${result.riskLevel}` + 
-          (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence.` : '.'));
+        const fallbackResponse = `This content was classified as **${result.riskLevel}**` + 
+          (result.confidenceLevel ? ` with **${result.confidenceLevel} confidence**` : '.') +
+          `\n\nThe quick analysis showed: ${extractQuickAnalysisFromResult(result)}`;
+        
+        setAnswer(fallbackResponse);
       } else {
         setAnswer(response);
       }
@@ -68,9 +71,12 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
       form.reset();
     } catch (error) {
       console.error("Failed to get answer:", error);
-      setAnswer("This was classified as " + 
-        `${result.riskLevel}` + 
-        (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence.` : '.'));
+      // Prepare a fallback answer that includes markdown formatting
+      const fallbackResponse = `This was classified as **${result.riskLevel}**` + 
+        (result.confidenceLevel ? ` with **${result.confidenceLevel} confidence**` : '.') +
+        `\n\nThe quick analysis showed: ${extractQuickAnalysisFromResult(result)}`;
+      
+      setAnswer(fallbackResponse);
       toast({
         title: "Analysis Available",
         description: "I'll provide what I know about this content.",
@@ -78,6 +84,22 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
     } finally {
       setAnswerLoading(false);
     }
+  };
+
+  // Helper function to extract quick analysis information from result
+  const extractQuickAnalysisFromResult = (result: ScamResult): string => {
+    const justificationText = result.aiVerification || result.justification || '';
+    
+    // Look for the Quick Analysis section in the justification
+    if (justificationText.includes('🧠 Quick Analysis')) {
+      const quickAnalysisSection = justificationText
+        .split('## 🧠 Quick Analysis')[1]
+        .split('##')[0]
+        .trim();
+      return quickAnalysisSection;
+    }
+    
+    return '';
   };
 
   return (
@@ -125,7 +147,7 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
       
       {answer && (
         <div className="mt-3 p-3 bg-primary/5 rounded-md border border-primary/10">
-          <ReactMarkdown className="text-sm leading-relaxed prose prose-sm max-w-none">
+          <ReactMarkdown className="text-sm leading-relaxed prose prose-sm max-w-none dark:prose-invert">
             {answer}
           </ReactMarkdown>
         </div>

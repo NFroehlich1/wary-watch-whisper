@@ -67,10 +67,10 @@ export const askAnalysisQuestion = async (
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const { data: jobData, error: jobError } = await supabase.functions.invoke(
-        `secure-gemini/job-status`,
+        'secure-gemini/job-status',
         { 
           method: 'GET',
-          body: { jobId }
+          query: { jobId }
         }
       );
       
@@ -101,9 +101,33 @@ export const askAnalysisQuestion = async (
     return ERROR_MESSAGES.NO_ANSWER;
   } catch (error) {
     console.error("Error asking analysis question:", error);
+    
+    // Extract any useful information from the original result
+    const fallbackAnswer = extractQuickAnalysisFromResult(result);
+    if (fallbackAnswer) {
+      return `Based on the analysis: ${fallbackAnswer}`;
+    }
+    
     return ERROR_MESSAGES.API_ERROR;
   }
 };
+
+/**
+ * Extract quick analysis information from result for fallback responses
+ */
+function extractQuickAnalysisFromResult(result: ScamResult): string {
+  const justificationText = result.aiVerification || result.justification || '';
+  
+  // Look for the Quick Analysis section in the justification
+  if (justificationText.includes('🧠 Quick Analysis')) {
+    return justificationText
+      .split('## 🧠 Quick Analysis')[1]
+      .split('##')[0]
+      .trim();
+  }
+  
+  return '';
+}
 
 /**
  * Cleans up the answer text by removing system prompts or classification prefixes
@@ -155,6 +179,7 @@ function cleanAnswerText(text: string): string {
     cleanText = cleanText.substring(questionMatch[0].length).trim();
   }
   
+  // Make sure markdown formatting is preserved
   return cleanText;
 }
 
@@ -178,12 +203,11 @@ function buildAnalysisPrompt(question: string, result: ScamResult): string {
     Please answer the following specific question about this analysis very concisely:
     "${question}"
     
-    Provide a brief, focused response that:
-    1. Answers the specific question directly in 1-2 sentences
-    2. Explains only the most critical information related to the question
-    3. Uses concrete examples only if necessary
+    Provide a focused response that directly addresses the question.
+    Format your answer using proper markdown formatting.
+    Use **bold** or *italic* text to highlight important points.
+    Your response must be specific to what was asked and brief (2-3 sentences).
     
-    Format your response using markdown if needed for emphasis.
-    Be extremely concise - your entire answer should be 2-3 sentences maximum.
+    If you cannot answer the question from the given analysis, explain why in 1 sentence.
   `;
 }
