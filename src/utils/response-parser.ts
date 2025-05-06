@@ -14,12 +14,15 @@ import { RiskLevel } from "../types";
 export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
   const upperResponse = aiResponse.toUpperCase();
   
-  if (upperResponse.includes('RESULT: SCAM')) {
-    return 'scam';
-  } else if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
+  // Check for HIGH SUSPICION first (more specific than just SUSPICIOUS)
+  if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
     return 'suspicious';
+  } else if (upperResponse.includes('RESULT: SCAM')) {
+    return 'scam';
   } else if (upperResponse.includes('RESULT: SUSPICIOUS')) {
     return 'suspicious';
+  } else if (upperResponse.includes('RESULT: SAFE')) {
+    return 'safe';
   }
   
   // Default to safe for ambiguous cases
@@ -53,12 +56,12 @@ export const extractExplanation = (aiResponse: string): string => {
 export const extractConfidenceLevel = (aiResponse: string): 'high' | 'medium' | 'low' => {
   const upperResponse = aiResponse.toUpperCase();
   
-  if (
+  if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
+    return 'high';
+  } else if (
     upperResponse.includes('RESULT: SCAM') ||
     upperResponse.includes('RESULT: SAFE')
   ) {
-    return 'high';
-  } else if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
     return 'high';
   } else if (upperResponse.includes('RESULT: SUSPICIOUS')) {
     return 'medium';

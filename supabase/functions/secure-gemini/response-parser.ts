@@ -17,7 +17,11 @@ export function processAiResponse(aiResponse) {
   // Simple string-based detection - case insensitive
   const upperResponse = aiResponse.toUpperCase();
   
-  if (upperResponse.includes('RESULT: SCAM')) {
+  // Check for HIGH SUSPICION first (more specific than just SUSPICIOUS)
+  if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
+    riskLevel = 'suspicious';
+    confidenceLevel = 'high'; 
+  } else if (upperResponse.includes('RESULT: SCAM')) {
     riskLevel = 'scam';
     confidenceLevel = 'high';
   } else if (upperResponse.includes('RESULT: SUSPICIOUS')) {
@@ -29,7 +33,7 @@ export function processAiResponse(aiResponse) {
   }
 
   // Extract explanation (everything after the first result line)
-  const resultPattern = /RESULT:\s*(SAFE|SUSPICIOUS|SCAM)/i;
+  const resultPattern = /RESULT:\s*(SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i;
   const resultMatch = aiResponse.match(resultPattern);
   
   if (resultMatch) {

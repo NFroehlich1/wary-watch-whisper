@@ -97,52 +97,96 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
 
 /**
  * Gets the status and result of a verification job
+ * Uses multiple approaches to increase reliability
  */
 export const getVerificationResult = async (jobId: string): Promise<JobStatus> => {
   try {
     console.log(`Checking status for Gemini job: ${jobId}`);
     
-    // Use more reliable method to pass jobId
-    const { data, error } = await supabase.functions.invoke(
-      'secure-gemini/job-status',
-      { 
-        method: 'POST',
-        body: { jobId },
-        headers: {
-          'x-jobid': jobId  // Redundant but ensures jobId is passed
-        }
+    // Try multiple approaches to fetch job status
+    try {
+      // Approach 1: Using GET with query params in URL
+      const { data, error } = await supabase.functions.invoke(
+        `secure-gemini/job-status?jobId=${encodeURIComponent(jobId)}`,
+        { method: 'GET' }
+      );
+      
+      if (!error && data) {
+        console.log(`Received job status via GET query: ${data.status} for job: ${jobId}`);
+        return {
+          status: data.status,
+          result: data.result,
+          error: data.error
+        };
       }
-    );
-    
-    if (error) {
-      console.error('Error calling job-status function:', error);
+      
+      // Log error but continue to try other approaches
+      if (error) {
+        console.warn('Error with GET query approach:', error);
+      }
+      
+      // Approach 2: Using POST with body
+      const postResult = await supabase.functions.invoke(
+        'secure-gemini/job-status',
+        { 
+          method: 'POST',
+          body: { jobId }
+        }
+      );
+      
+      if (!postResult.error && postResult.data) {
+        console.log(`Received job status via POST body: ${postResult.data.status} for job: ${jobId}`);
+        return {
+          status: postResult.data.status,
+          result: postResult.data.result,
+          error: postResult.data.error
+        };
+      }
+      
+      // Log error but continue to try other approaches
+      if (postResult.error) {
+        console.warn('Error with POST body approach:', postResult.error);
+      }
+      
+      // Approach 3: Using GET with header
+      const headerResult = await supabase.functions.invoke(
+        'secure-gemini/job-status',
+        { 
+          method: 'GET',
+          headers: { 'x-jobid': jobId }
+        }
+      );
+      
+      if (!headerResult.error && headerResult.data) {
+        console.log(`Received job status via header: ${headerResult.data.status} for job: ${jobId}`);
+        return {
+          status: headerResult.data.status,
+          result: headerResult.data.result,
+          error: headerResult.data.error
+        };
+      }
+      
+      // If we reach here, all approaches failed
+      console.error(`All approaches to get job status for ${jobId} failed`);
+      
+      // Return a failed status
       return {
         status: 'failed',
-        error: `Failed to get job status: ${error.message}`
+        error: 'Communication with job status endpoint failed after multiple attempts'
       };
-    }
-
-    if (!data) {
-      console.error('No data returned from job-status function');
+      
+    } catch (fetchError) {
+      console.error('Error fetching job status:', fetchError);
       return {
         status: 'failed',
-        error: 'No data returned from job status check'
+        error: `Failed to communicate with job status endpoint: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`
       };
     }
-
-    console.log(`Received job status: ${data.status} for job: ${jobId}`);
-    
-    // Map the database response to our JobStatus interface
-    return {
-      status: data.status,
-      result: data.result,
-      error: data.error
-    };
   } catch (error) {
-    console.error('Error getting verification result:', error);
+    console.error('Error in getVerificationResult:', error);
     return {
       status: 'failed',
-      error: `Failed to get verification result: ${error instanceof Error ? error.message : String(error)}`
+      error: `Exception in getVerificationResult: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 };

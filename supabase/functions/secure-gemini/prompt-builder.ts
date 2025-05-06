@@ -11,6 +11,7 @@ export function buildUrlPrompt(url) {
   Respond with ONLY one of these exact classifications first:
   RESULT: SAFE
   RESULT: SUSPICIOUS
+  RESULT: HIGH SUSPICION
   RESULT: SCAM
 
   Then provide a very short plain text explanation (max 1-2 sentences).`;
@@ -24,6 +25,7 @@ export function buildTextPrompt(text) {
   Respond with ONLY one of these exact classifications first:
   RESULT: SAFE
   RESULT: SUSPICIOUS
+  RESULT: HIGH SUSPICION
   RESULT: SCAM
 
   Then provide a very short plain text explanation (max 1-2 sentences).`;

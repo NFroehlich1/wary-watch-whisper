@@ -72,7 +72,7 @@ serve(async (req) => {
 });
 
 /**
- * Handle job status request - standardized parameter handling
+ * Handle job status request with multiple ways to extract the jobId
  * @param req - Request object
  * @returns Response with job status and result
  */
@@ -80,22 +80,33 @@ async function handleJobStatus(req) {
   try {
     let jobId = null;
     
-    // Try to get jobId from multiple sources
-    try {
-      const body = await req.json();
-      if (body && body.jobId) {
-        jobId = body.jobId;
-      }
-    } catch (e) {
-      // If body parsing fails, try other methods
+    // First attempt: Try to get jobId from URL query parameters
+    const url = new URL(req.url);
+    if (url.searchParams.has('jobId')) {
+      jobId = url.searchParams.get('jobId');
     }
     
-    // If jobId not found in body, try headers
-    if (!jobId && req.headers.has('x-jobid')) {
-      jobId = req.headers.get('x-jobid');
+    // Second attempt: Try to get jobId from request body
+    if (!jobId) {
+      try {
+        const body = await req.json();
+        if (body && body.jobId) {
+          jobId = body.jobId;
+        }
+      } catch (e) {
+        // Silent fail - body parsing failed, continue to other methods
+      }
+    }
+    
+    // Third attempt: Try to get jobId from headers
+    if (!jobId) {
+      if (req.headers.has('x-jobid')) {
+        jobId = req.headers.get('x-jobid');
+      }
     }
     
     if (!jobId) {
+      console.error("No jobId found in request");
       return createErrorResponse("Missing jobId parameter", 400);
     }
     
@@ -104,6 +115,7 @@ async function handleJobStatus(req) {
     const job = await getJob(jobId);
     
     if (!job) {
+      console.error(`Job with ID '${jobId}' not found`);
       return createErrorResponse(`Job with ID '${jobId}' not found`, 404);
     }
     

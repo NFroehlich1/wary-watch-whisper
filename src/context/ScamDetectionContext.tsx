@@ -103,7 +103,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
                 geminiResult = jobStatus.result;
                 toast({
                   title: "AI Analysis Complete",
-                  description: `Analysis completed in ${attempts} attempts`,
+                  description: `Analysis completed successfully`,
                   duration: 3000,
                 });
                 break;
@@ -116,26 +116,37 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
                 });
                 break;
               }
-              // If still pending, continue to the next attempt
               
-              // Every 15 attempts, show a progress toast
+              // If still pending, continue to the next attempt
+              // Every 10 attempts, show a progress toast
               if (attempts % 10 === 0) {
                 toast({
                   title: "AI Analysis In Progress",
-                  description: `Still analyzing... (attempt ${attempts}/${MAX_JOB_CHECK_ATTEMPTS})`,
+                  description: `Still analyzing... Please wait`,
                   duration: 2000,
                 });
               }
             } catch (statusError) {
               console.error(`Error checking job ${jobId} status (attempt ${attempts}):`, statusError);
-              // Don't break - try again after backoff delay
-              if (attempts % 5 === 0) {
+              
+              // Don't break immediately - try a few more times 
+              if (attempts >= 5 && attempts % 5 === 0) {
                 toast({
                   title: "Connection Issue",
-                  description: "Retrying connection to AI service...",
+                  description: "Having trouble connecting to AI service...",
                   variant: "destructive",
                   duration: 2000,
                 });
+              }
+              
+              // If we've tried many times with errors, give up
+              if (attempts >= 15) {
+                toast({
+                  title: "Connection Failed",
+                  description: "Using built-in detection as fallback",
+                  variant: "destructive",
+                });
+                break;
               }
             }
           }
@@ -147,9 +158,9 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
             detectedRisk.justification = geminiResult.explanation;
             detectedRisk.aiVerification = `AI analysis: ${geminiResult.riskAssessment.toUpperCase()}\n\n${geminiResult.explanation}`;
           } else {
-            detectedRisk.aiVerification = "AI analysis timed out. Using built-in detection instead.";
+            detectedRisk.aiVerification = "AI analysis unavailable. Using built-in detection instead.";
             toast({
-              title: "AI Analysis Timed Out",
+              title: "AI Analysis Unavailable",
               description: "Using built-in detection as fallback",
               variant: "destructive",
             });
