@@ -37,14 +37,14 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
     },
   });
 
-  // Handle question submission
+  // Handle question submission - now using the optimized direct endpoint
   const onSubmitQuestion = async (data: QuestionForm) => {
     setAnswerLoading(true);
     setAnswer(null);
     
     try {
       console.log("Submitting question:", data.question);
-      // Use the context method to ask a question about analysis
+      // Use the optimized direct question method
       const response = await askAnalysisQuestion(data.question, result);
       console.log("Received answer:", response);
       

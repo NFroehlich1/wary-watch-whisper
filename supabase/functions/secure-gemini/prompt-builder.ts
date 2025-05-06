@@ -33,17 +33,17 @@ export function buildTextPrompt(text) {
 
 /**
  * Builds a focused analysis question prompt
+ * Optimized for faster direct answers
  */
 export function buildAnalysisQuestionPrompt(question, content, riskLevel, explanation) {
-  return `You are analyzing a message or URL: "${content}"
+  // Format simplified for speed while maintaining context
+  return `You are analyzing content classified as: ${riskLevel.toUpperCase()}
   
-  It was classified as: ${riskLevel.toUpperCase()}
-  Analysis details: ${explanation}
+The content: "${content.substring(0, 200)}${content.length > 200 ? '...' : ''}"
+Previous analysis: ${explanation.substring(0, 100)}${explanation.length > 100 ? '...' : ''}
   
-  Now answer this user question: "${question}"
+Question: "${question}"
   
-  Keep your response VERY focused on specifically answering ONLY what was asked.
-  Respond in plain text without any prefix like "Answer:" or "Response:".
-  Limit your answer to 3-4 sentences maximum.
-  If you don't have enough information, state that directly.`;
+Answer the question directly and briefly (2-3 sentences max). 
+No introduction or prefix like "Answer:" needed.`;
 }

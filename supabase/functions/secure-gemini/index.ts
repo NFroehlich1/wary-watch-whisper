@@ -20,6 +20,11 @@ serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.split('/').pop();
   
+  // New direct question endpoint for faster question answering
+  if (path === 'direct-question') {
+    return handleDirectQuestion(req);
+  }
+  
   // Check if this is a job status request
   if (path === 'job-status') {
     return handleJobStatus(req);
@@ -70,6 +75,60 @@ serve(async (req) => {
     return createErrorResponse(error.message, 500);
   }
 });
+
+/**
+ * Handle direct question requests for immediate responses (no job creation)
+ */
+async function handleDirectQuestion(req) {
+  try {
+    // Get the API key from environment variables
+    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    
+    if (!apiKey) {
+      console.error("API key is missing");
+      return createErrorResponse("API key is not configured properly.", 500);
+    }
+    
+    // Parse the request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      return createErrorResponse("Invalid JSON in request body", 400);
+    }
+    
+    console.log("Handling direct question request");
+    
+    const { question, content, riskLevel, explanation } = requestBody;
+    
+    if (!question || !content || !riskLevel) {
+      return createErrorResponse("Missing required parameters for question answering", 400);
+    }
+    
+    // Build focused prompt for the question
+    const prompt = buildAnalysisQuestionPrompt(question, content, riskLevel, explanation);
+    
+    try {
+      console.log("Sending direct question to Gemini API");
+      
+      // Use a shorter timeout for direct questions
+      const response = await callGeminiAPI(prompt, apiKey);
+      
+      // Extract text from response
+      const answer = response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      console.log(`Answer received: ${answer.substring(0, 50)}...`);
+      
+      return createResponse({ answer });
+    } catch (apiError) {
+      console.error("API error for direct question:", apiError);
+      return createErrorResponse(`API error: ${apiError.message || 'Unknown error'}`, 500);
+    }
+  } catch (error) {
+    console.error("Error handling direct question:", error);
+    return createErrorResponse(`Error: ${error.message || 'Unknown error'}`, 500);
+  }
+}
 
 /**
  * Handle job status request with multiple ways to extract the jobId

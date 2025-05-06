@@ -19,6 +19,8 @@ const ERROR_MESSAGES = {
 
 /**
  * Asks a question about an analysis result to the Gemini AI
+ * OPTIMIZED: Uses direct question endpoint for faster responses
+ * 
  * @param question - The question to ask
  * @param result - The scam detection result
  * @param geminiOptions - Configuration for the Gemini AI
@@ -34,22 +36,15 @@ export const askAnalysisQuestion = async (
   }
   
   try {
-    // Use the more focused question prompt
-    const prompt = getAnalysisQuestionPrompt(
-      question,
-      result.originalContent,
-      result.riskLevel,
-      result.justification || result.aiVerification || ""
-    );
+    console.log("Sending analysis question directly to Gemini:", question);
     
-    console.log("Sending analysis question to Gemini:", question);
-    
-    // Call our secure Supabase Edge Function
-    const { data, error } = await supabase.functions.invoke('secure-gemini', {
+    // Call the new direct endpoint for immediate answers without job creation/polling
+    const { data, error } = await supabase.functions.invoke('secure-gemini/direct-question', {
       body: {
-        content: prompt,
-        detectionType: 'text',
-        language: 'en'
+        question,
+        content: result.originalContent,
+        riskLevel: result.riskLevel,
+        explanation: result.justification || result.aiVerification || ""
       }
     });
     
@@ -63,8 +58,8 @@ export const askAnalysisQuestion = async (
       throw new Error(`Failed to get analysis answer: ${error.message}`);
     }
     
-    if (!data || !data.jobId) {
-      console.error("Invalid response format from Gemini API");
+    if (!data || !data.answer) {
+      console.error("Invalid response format from direct question API");
       toast({
         title: "Analysis Error",
         description: "Invalid response from AI service.",
@@ -73,70 +68,11 @@ export const askAnalysisQuestion = async (
       return ERROR_MESSAGES.NO_ANSWER;
     }
     
-    console.log(`Analysis question job created with ID: ${data.jobId}`);
+    // Return the cleaned-up answer directly - no more polling!
+    console.log("Direct answer from Gemini:", data.answer.substring(0, 100) + (data.answer.length > 100 ? '...' : ''));
+    const cleanedAnswer = cleanAnswerText(data.answer);
+    return cleanedAnswer || ERROR_MESSAGES.NO_ANSWER;
     
-    // Now poll for the result using the job ID
-    const jobId = data.jobId;
-    let jobComplete = false;
-    let attempts = 0;
-    let maxAttempts = 30; // Increased to allow more time
-    
-    while (!jobComplete && attempts < maxAttempts) {
-      attempts++;
-      // Wait longer between checks: 2 seconds
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      console.log(`Checking status for analysis job ${jobId}, attempt ${attempts}`);
-      
-      // Using the improved approach for passing jobId parameter
-      const { data: jobData, error: jobError } = await supabase.functions.invoke(
-        'secure-gemini/job-status',
-        { 
-          method: 'GET',
-          headers: {
-            'x-urlencoded-params': JSON.stringify({ jobId }),
-            'x-jobid': jobId // Backup method
-          }
-        }
-      );
-      
-      if (jobError) {
-        console.error("Error checking job status:", jobError);
-        continue;
-      }
-      
-      if (!jobData) {
-        console.error("No data returned from job status check");
-        continue;
-      }
-      
-      console.log("Job status data:", JSON.stringify(jobData).substring(0, 100) + "...");
-      
-      if (jobData.status === 'completed' && jobData.result) {
-        jobComplete = true;
-        const response = jobData.result.explanation;
-        console.log("Raw answer from Gemini:", response.substring(0, 100) + (response.length > 100 ? '...' : ''));
-        
-        // Return the cleaned-up answer
-        const cleanedAnswer = cleanAnswerText(response);
-        return cleanedAnswer || ERROR_MESSAGES.NO_ANSWER;
-      } else if (jobData.status === 'failed') {
-        console.error('Gemini verification failed:', jobData.error);
-        break;
-      }
-    }
-    
-    if (!jobComplete) {
-      console.error("Job timed out after", attempts, "attempts");
-      toast({
-        title: "Analysis Timeout",
-        description: "The AI service took too long to respond. Please try again later.",
-        variant: "destructive"
-      });
-      return ERROR_MESSAGES.API_ERROR;
-    }
-    
-    return ERROR_MESSAGES.NO_ANSWER;
   } catch (error) {
     console.error("Error asking analysis question:", error);
     
@@ -220,5 +156,3 @@ function cleanAnswerText(text: string): string {
   
   return cleanText;
 }
-
-// We don't need buildAnalysisPrompt anymore as we're using the prompt-builder
