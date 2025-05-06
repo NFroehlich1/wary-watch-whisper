@@ -5,6 +5,7 @@
  */
 import { Language, RiskLevel } from "../types";
 import { supabase } from "../integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 // Typdefinition für Verifikationsergebnisse
 export interface VerificationResult {
@@ -63,14 +64,13 @@ export const getVerificationResult = async (jobId: string): Promise<JobStatus> =
   try {
     console.log(`Checking status for Gemini job: ${jobId}`);
     
-    // Aufruf der sicheren Supabase Edge Function mit der Job-ID als Parameter
+    // Improved approach: First try with URL parameters via GET
     const { data, error } = await supabase.functions.invoke(
       'secure-gemini/job-status',
       { 
         method: 'GET',
-        // Using the correct approach for URL parameters
         headers: {
-          'x-urlencoded-params': `jobId=${encodeURIComponent(jobId)}`
+          'x-urlencoded-params': JSON.stringify({ jobId })
         }
       }
     );

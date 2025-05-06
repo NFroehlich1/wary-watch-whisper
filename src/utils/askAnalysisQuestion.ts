@@ -61,22 +61,22 @@ export const askAnalysisQuestion = async (
     const jobId = data.jobId;
     let jobComplete = false;
     let attempts = 0;
-    let maxAttempts = 10;
+    let maxAttempts = 20; // Increased from 10 to allow more time
     
     while (!jobComplete && attempts < maxAttempts) {
       attempts++;
-      // Wait 1 second between checks
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait longer between checks: 1.5 seconds instead of 1
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       console.log(`Checking status for analysis job ${jobId}, attempt ${attempts}`);
       
-      // Using the correct approach for URL parameters
+      // Using the improved approach for passing jobId parameter
       const { data: jobData, error: jobError } = await supabase.functions.invoke(
         'secure-gemini/job-status',
         { 
           method: 'GET',
           headers: {
-            'x-urlencoded-params': `jobId=${encodeURIComponent(jobId)}`
+            'x-urlencoded-params': JSON.stringify({ jobId })
           }
         }
       );

@@ -78,11 +78,32 @@ serve(async (req) => {
  */
 async function handleJobStatus(req, url) {
   try {
-    // Properly get jobId from URL params or headers
+    // Get all possible sources for jobId
     const params = url.searchParams;
-    const jobId = params.get('jobId') || 
-                  req.headers.get('x-jobid') || 
-                  JSON.parse(req.headers.get('x-urlencoded-params') || '{}').jobId;
+    const headerParams = req.headers.get('x-urlencoded-params');
+    
+    console.log('URL search params:', Object.fromEntries(params.entries()));
+    console.log('Header x-urlencoded-params:', headerParams);
+    
+    // Try to get jobId from multiple sources
+    let jobId = params.get('jobId');
+    
+    if (!jobId && headerParams) {
+      try {
+        const parsedParams = JSON.parse(headerParams);
+        jobId = parsedParams.jobId;
+      } catch (e) {
+        console.error('Error parsing x-urlencoded-params:', e);
+        // Try to parse as URL encoded string
+        const urlParams = new URLSearchParams(headerParams);
+        jobId = urlParams.get('jobId');
+      }
+    }
+    
+    // Fallback to x-jobid header
+    if (!jobId) {
+      jobId = req.headers.get('x-jobid');
+    }
     
     console.log(`Handling job status request for job: ${jobId}`);
     
