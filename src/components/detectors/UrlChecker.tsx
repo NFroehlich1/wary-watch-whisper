@@ -10,13 +10,14 @@ import { AlertTriangle } from "lucide-react";
 const UrlChecker = () => {
   const [url, setUrl] = useState('');
   const [showHttpWarning, setShowHttpWarning] = useState(false);
-  const { detectScam, loading, result, resetResult } = useScamDetection();
+  const { detectScam, loading, results, resetResult } = useScamDetection();
+  const result = results.url;
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) return;
     
-    resetResult();
+    resetResult('url');
     
     // Check if URL uses HTTP instead of HTTPS and show warning
     if (url.toLowerCase().startsWith('http:')) {
@@ -71,7 +72,7 @@ const UrlChecker = () => {
         )}
       </form>
       
-      {result && <ResultDisplay />}
+      {result && <ResultDisplay result={result} />}
     </div>
   );
 };

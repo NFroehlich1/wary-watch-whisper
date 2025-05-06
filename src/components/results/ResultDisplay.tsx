@@ -10,9 +10,14 @@ import ContentDisplay from './ContentDisplay';
 import AnalysisQuestion from './AnalysisQuestion';
 import EmojiReaction from './EmojiReaction';
 import { getTranslation } from '@/utils/language';
+import { ScamResult } from '@/types';
 
-const ResultDisplay = () => {
-  const { result, playAudio, audioPlaying, askAnalysisQuestion } = useScamDetection();
+interface ResultDisplayProps {
+  result: ScamResult;
+}
+
+const ResultDisplay: React.FC<ResultDisplayProps> = ({ result }) => {
+  const { playAudio, audioPlaying, askAnalysisQuestion } = useScamDetection();
   
   if (!result) return null;
   
@@ -63,7 +68,7 @@ const ResultDisplay = () => {
       </CardContent>
       <CardFooter>
         <Button 
-          onClick={playAudio} 
+          onClick={() => playAudio(result)} 
           variant="outline" 
           className="ml-auto"
           disabled={audioPlaying}

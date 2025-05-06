@@ -8,7 +8,8 @@ import { Mic } from 'lucide-react';
 const VoiceChecker = () => {
   const [file, setFile] = useState<File | null>(null);
   const [transcription, setTranscription] = useState<string>('');
-  const { detectScam, loading, result, resetResult } = useScamDetection();
+  const { detectScam, loading, results, resetResult } = useScamDetection();
+  const result = results.voice;
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -20,7 +21,7 @@ const VoiceChecker = () => {
     e.preventDefault();
     if (!file) return;
     
-    resetResult();
+    resetResult('voice');
     try {
       // For now we'll use a placeholder transcription until we implement the actual transcription service
       const demoTranscript = "This is a transcription of the voice message.";
@@ -34,13 +35,13 @@ const VoiceChecker = () => {
   };
   
   const handleSampleUpload = () => {
-    resetResult();
+    resetResult('voice');
     // Use a sample English transcription for demo purposes
     const sampleTranscript = "URGENT: Your bank requires confirmation of your data. Please call us immediately at this unknown number.";
     setTranscription(sampleTranscript);
     
     // Analyze the sample text with Gemini
-    detectScam(sampleTranscript, 'text', 'en');
+    detectScam(sampleTranscript, 'voice', 'en');
   };
   
   return (
@@ -99,7 +100,7 @@ const VoiceChecker = () => {
         </div>
       )}
       
-      {result && <ResultDisplay />}
+      {result && <ResultDisplay result={result} />}
     </div>
   );
 };

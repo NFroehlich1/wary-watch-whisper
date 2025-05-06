@@ -27,7 +27,11 @@ const BACKOFF_FACTOR = 1.2;             // More moderate growth factor
 
 export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ScamResult | null>(null);
+  const [results, setResults] = useState<Record<DetectionType, ScamResult | null>>({
+    url: null,
+    text: null,
+    voice: null
+  });
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [geminiOptions, setGeminiOptionsState] = useState<GeminiOptions>({
     apiKey: '',
@@ -176,7 +180,11 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
         }
       }
       
-      setResult(detectedRisk);
+      // Store the result for the specific detection type
+      setResults(prevResults => ({
+        ...prevResults,
+        [type]: detectedRisk
+      }));
     } catch (error) {
       console.error('Detection error:', error);
       toast({
@@ -189,11 +197,14 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
     }
   };
 
-  const resetResult = () => {
-    setResult(null);
+  const resetResult = (type: DetectionType) => {
+    setResults(prevResults => ({
+      ...prevResults,
+      [type]: null
+    }));
   };
   
-  const playAudio = () => {
+  const playAudio = (result: ScamResult) => {
     if (!result) return;
     
     setAudioPlaying(true);
@@ -208,7 +219,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
     <ScamDetectionContext.Provider 
       value={{ 
         loading, 
-        result, 
+        results, 
         detectScam, 
         resetResult, 
         playAudio,

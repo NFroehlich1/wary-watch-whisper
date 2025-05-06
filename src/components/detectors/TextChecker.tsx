@@ -8,13 +8,14 @@ import ResultDisplay from '../results/ResultDisplay';
 
 const TextChecker = () => {
   const [text, setText] = useState('');
-  const { detectScam, loading, result, resetResult } = useScamDetection();
+  const { detectScam, loading, results, resetResult } = useScamDetection();
+  const result = results.text;
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
     
-    resetResult();
+    resetResult('text');
     await detectScam(text, 'text');
   };
   
@@ -78,7 +79,7 @@ const TextChecker = () => {
         </div>
       </form>
       
-      {result && <ResultDisplay />}
+      {result && <ResultDisplay result={result} />}
     </div>
   );
 };
