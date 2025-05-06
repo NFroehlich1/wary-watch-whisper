@@ -31,6 +31,8 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
   jobId: string;
 }> => {
   try {
+    console.log(`Starting Gemini verification for ${detectionType} content`);
+    
     // Aufruf der sicheren Supabase Edge Function, um den Job zu starten
     const { data, error } = await supabase.functions.invoke('secure-gemini', {
       body: { content, detectionType, language }
@@ -40,6 +42,8 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
       console.error('Error calling secure-gemini function:', error);
       throw new Error(`Failed to verify content: ${error.message}`);
     }
+    
+    console.log(`Gemini verification job created with ID: ${data.jobId}`);
     
     return {
       jobId: data.jobId
@@ -57,12 +61,14 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
  */
 export const getVerificationResult = async (jobId: string): Promise<JobStatus> => {
   try {
+    console.log(`Checking status for Gemini job: ${jobId}`);
+    
     // Aufruf der sicheren Supabase Edge Function mit der Job-ID als Parameter
     const { data, error } = await supabase.functions.invoke(
       'secure-gemini/job-status',
       { 
         method: 'GET',
-        // Fix: Using the correct approach for URL parameters
+        // Using the correct approach for URL parameters
         headers: {
           'x-urlencoded-params': `jobId=${encodeURIComponent(jobId)}`
         }
@@ -77,6 +83,8 @@ export const getVerificationResult = async (jobId: string): Promise<JobStatus> =
       };
     }
 
+    console.log(`Received job status: ${data.status} for job: ${jobId}`);
+    
     // Map the database response to our JobStatus interface
     return {
       status: data.status,

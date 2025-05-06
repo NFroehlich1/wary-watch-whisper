@@ -55,6 +55,8 @@ export const askAnalysisQuestion = async (
       return ERROR_MESSAGES.NO_ANSWER;
     }
     
+    console.log(`Analysis question job created with ID: ${data.jobId}`);
+    
     // Now poll for the result using the job ID
     const jobId = data.jobId;
     let jobComplete = false;
@@ -66,7 +68,9 @@ export const askAnalysisQuestion = async (
       // Wait 1 second between checks
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Fix: Using the correct approach for URL parameters
+      console.log(`Checking status for analysis job ${jobId}, attempt ${attempts}`);
+      
+      // Using the correct approach for URL parameters
       const { data: jobData, error: jobError } = await supabase.functions.invoke(
         'secure-gemini/job-status',
         { 
@@ -85,7 +89,7 @@ export const askAnalysisQuestion = async (
       if (jobData.status === 'completed' && jobData.result) {
         jobComplete = true;
         const response = jobData.result.explanation;
-        console.log("Raw answer from Gemini:", response);
+        console.log("Raw answer from Gemini:", response.substring(0, 100) + (response.length > 100 ? '...' : ''));
         
         // Return the cleaned-up answer
         const cleanedAnswer = cleanAnswerText(response);

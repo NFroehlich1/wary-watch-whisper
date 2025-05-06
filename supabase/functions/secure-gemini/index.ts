@@ -78,8 +78,13 @@ serve(async (req) => {
  */
 async function handleJobStatus(req, url) {
   try {
-    // Get jobId from URL searchParams
-    const jobId = url.searchParams.get('jobId');
+    // Properly get jobId from URL params or headers
+    const params = url.searchParams;
+    const jobId = params.get('jobId') || 
+                  req.headers.get('x-jobid') || 
+                  JSON.parse(req.headers.get('x-urlencoded-params') || '{}').jobId;
+    
+    console.log(`Handling job status request for job: ${jobId}`);
     
     if (!jobId) {
       return createErrorResponse("Missing jobId parameter", 400);
