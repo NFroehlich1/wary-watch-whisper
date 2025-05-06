@@ -1,4 +1,5 @@
 
+
 // Follow Deno standards for imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
@@ -66,6 +67,7 @@ serve(async (req) => {
     return createResponse({ jobId });
 
   } catch (error) {
+    console.error("Error in secure-gemini function:", error);
     return createErrorResponse(error.message, 500, error);
   }
 });
@@ -92,17 +94,24 @@ async function handleJobStatus(req, url) {
       try {
         const parsedParams = JSON.parse(headerParams);
         jobId = parsedParams.jobId;
+        console.log('Successfully parsed jobId from JSON header:', jobId);
       } catch (e) {
         console.error('Error parsing x-urlencoded-params:', e);
         // Try to parse as URL encoded string
-        const urlParams = new URLSearchParams(headerParams);
-        jobId = urlParams.get('jobId');
+        try {
+          const urlParams = new URLSearchParams(headerParams);
+          jobId = urlParams.get('jobId');
+          console.log('Successfully parsed jobId from URL params:', jobId);
+        } catch (urlError) {
+          console.error('Error parsing as URL params:', urlError);
+        }
       }
     }
     
     // Fallback to x-jobid header
     if (!jobId) {
       jobId = req.headers.get('x-jobid');
+      console.log('Using x-jobid header:', jobId);
     }
     
     console.log(`Handling job status request for job: ${jobId}`);
@@ -119,6 +128,7 @@ async function handleJobStatus(req, url) {
     
     return createResponse(job);
   } catch (error) {
+    console.error("Error fetching job status:", error);
     return createErrorResponse("Error fetching job status", 500, error);
   }
 }
@@ -143,23 +153,39 @@ async function processGeminiRequest(jobId: string, content: string, detectionTyp
     console.log(`Processing Gemini API call for job ${jobId}`);
     console.log(`Content (first 50 chars): ${content.substring(0, 50)}...`);
     
-    // Call the Gemini API with the API key
-    const response = await callGeminiAPI(prompt, apiKey);
-    const aiResponse = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // Add a timeout to the fetch request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
-    console.log(`Response preview for job ${jobId}: ${aiResponse.substring(0, 100)}...`);
-    
-    // Process the AI response to extract classification and explanation
-    const { riskLevel, confidenceLevel, explanation } = processAiResponse(aiResponse);
+    try {
+      // Call the Gemini API with the API key
+      const response = await callGeminiAPI(prompt, apiKey);
+      clearTimeout(timeoutId);
+      
+      const aiResponse = response.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      
+      console.log(`Response preview for job ${jobId}: ${aiResponse.substring(0, 100)}...`);
+      
+      // Process the AI response to extract classification and explanation
+      const { riskLevel, confidenceLevel, explanation } = processAiResponse(aiResponse);
 
-    // Update job with result in database
-    await completeJob(jobId, {
-      riskAssessment: riskLevel,
-      explanation: explanation,
-      confidenceLevel: confidenceLevel
-    });
+      // Update job with result in database
+      await completeJob(jobId, {
+        riskAssessment: riskLevel,
+        explanation: explanation,
+        confidenceLevel: confidenceLevel
+      });
+    } catch (apiError) {
+      if (apiError.name === 'AbortError') {
+        console.error(`API request timed out for job ${jobId}`);
+        await failJob(jobId, 'API request timed out after 30 seconds');
+      } else {
+        throw apiError;
+      }
+    }
   } catch (error) {
     console.error(`Error processing job ${jobId}:`, error);
     await failJob(jobId, error);
   }
 }
+

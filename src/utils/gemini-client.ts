@@ -41,7 +41,17 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
     
     if (error) {
       console.error('Error calling secure-gemini function:', error);
+      toast({
+        title: "AI Analysis Error",
+        description: "Could not start AI analysis. Will use built-in detection instead.",
+        variant: "destructive"
+      });
       throw new Error(`Failed to verify content: ${error.message}`);
+    }
+    
+    if (!data || !data.jobId) {
+      console.error('Invalid response from secure-gemini function, missing jobId');
+      throw new Error(`Invalid response from secure-gemini function`);
     }
     
     console.log(`Gemini verification job created with ID: ${data.jobId}`);
@@ -51,6 +61,11 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
     };
   } catch (error) {
     console.error('Error verifying with secure Gemini function:', error);
+    toast({
+      title: "AI Analysis Error",
+      description: "Failed to start AI verification. Using built-in detection instead.",
+      variant: "destructive"
+    });
     throw new Error(`Failed to start verification job: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
@@ -64,13 +79,17 @@ export const getVerificationResult = async (jobId: string): Promise<JobStatus> =
   try {
     console.log(`Checking status for Gemini job: ${jobId}`);
     
-    // Improved approach: First try with URL parameters via GET
+    // First try with JSON encoded parameters
+    const encodedParams = JSON.stringify({ jobId });
+    console.log(`Using encoded params: ${encodedParams}`);
+    
     const { data, error } = await supabase.functions.invoke(
       'secure-gemini/job-status',
       { 
         method: 'GET',
         headers: {
-          'x-urlencoded-params': JSON.stringify({ jobId })
+          'x-urlencoded-params': encodedParams,
+          'x-jobid': jobId // Backup method
         }
       }
     );
@@ -80,6 +99,14 @@ export const getVerificationResult = async (jobId: string): Promise<JobStatus> =
       return {
         status: 'failed',
         error: `Failed to get job status: ${error.message}`
+      };
+    }
+
+    if (!data) {
+      console.error('No data returned from job-status function');
+      return {
+        status: 'failed',
+        error: 'No data returned from job status check'
       };
     }
 

@@ -1,4 +1,5 @@
 
+
 /**
  * Client for making requests to the Gemini API
  */
@@ -13,27 +14,42 @@
 export async function callGeminiAPI(prompt: string, apiKey: string) {
   const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{
-          text: prompt
-        }]
-      }]
-    })
-  });
+  console.log('Making request to Gemini API...');
 
-  if (!response.ok) {
-    console.error(`Gemini API error: Status ${response.status}, ${response.statusText}`);
-    const errorText = await response.text();
-    console.error(`Error response: ${errorText}`);
-    throw new Error(`Gemini API error: ${response.statusText} (${response.status})`);
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        // Adding parameters to improve response time
+        generationConfig: {
+          maxOutputTokens: 1000,
+          temperature: 0.2,
+          topP: 0.95
+        }
+      })
+    });
+
+    if (!response.ok) {
+      console.error(`Gemini API error: Status ${response.status}, ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`Error response: ${errorText}`);
+      throw new Error(`Gemini API error: ${response.statusText} (${response.status})`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error in Gemini API call:', error);
+    throw new Error(`Gemini API call failed: ${error.message || 'Unknown error'}`);
   }
-
-  return await response.json();
 }
+

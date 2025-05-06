@@ -5,6 +5,7 @@
  */
 import { ScamResult, GeminiOptions } from '../types';
 import { supabase } from "../integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 /**
  * Constants for error messages and defaults
@@ -47,11 +48,21 @@ export const askAnalysisQuestion = async (
     
     if (error) {
       console.error("Error asking analysis question:", error);
+      toast({
+        title: "Analysis Error",
+        description: "Failed to get analysis answer. Please try again later.",
+        variant: "destructive"
+      });
       throw new Error(`Failed to get analysis answer: ${error.message}`);
     }
     
     if (!data || !data.jobId) {
       console.error("Invalid response format from Gemini API");
+      toast({
+        title: "Analysis Error",
+        description: "Invalid response from AI service.",
+        variant: "destructive"
+      });
       return ERROR_MESSAGES.NO_ANSWER;
     }
     
@@ -61,12 +72,12 @@ export const askAnalysisQuestion = async (
     const jobId = data.jobId;
     let jobComplete = false;
     let attempts = 0;
-    let maxAttempts = 20; // Increased from 10 to allow more time
+    let maxAttempts = 30; // Increased to allow more time
     
     while (!jobComplete && attempts < maxAttempts) {
       attempts++;
-      // Wait longer between checks: 1.5 seconds instead of 1
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Wait longer between checks: 2 seconds
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       console.log(`Checking status for analysis job ${jobId}, attempt ${attempts}`);
       
@@ -76,7 +87,8 @@ export const askAnalysisQuestion = async (
         { 
           method: 'GET',
           headers: {
-            'x-urlencoded-params': JSON.stringify({ jobId })
+            'x-urlencoded-params': JSON.stringify({ jobId }),
+            'x-jobid': jobId // Backup method
           }
         }
       );
@@ -85,6 +97,13 @@ export const askAnalysisQuestion = async (
         console.error("Error checking job status:", jobError);
         continue;
       }
+      
+      if (!jobData) {
+        console.error("No data returned from job status check");
+        continue;
+      }
+      
+      console.log("Job status data:", JSON.stringify(jobData).substring(0, 100) + "...");
       
       if (jobData.status === 'completed' && jobData.result) {
         jobComplete = true;
@@ -101,7 +120,12 @@ export const askAnalysisQuestion = async (
     }
     
     if (!jobComplete) {
-      console.error("Job timed out");
+      console.error("Job timed out after", attempts, "attempts");
+      toast({
+        title: "Analysis Timeout",
+        description: "The AI service took too long to respond. Please try again later.",
+        variant: "destructive"
+      });
       return ERROR_MESSAGES.API_ERROR;
     }
     
