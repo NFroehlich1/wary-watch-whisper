@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { ScamResult } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import ReactMarkdown from 'react-markdown';
 
 // Form schema with less strict validation
 const questionSchema = z.object({
@@ -124,7 +125,9 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
       
       {answer && (
         <div className="mt-3 p-3 bg-primary/5 rounded-md border border-primary/10">
-          <p className="text-sm leading-relaxed">{answer}</p>
+          <ReactMarkdown className="text-sm leading-relaxed prose prose-sm max-w-none">
+            {answer}
+          </ReactMarkdown>
         </div>
       )}
     </div>

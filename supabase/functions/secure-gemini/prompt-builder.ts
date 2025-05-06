@@ -76,13 +76,10 @@ export function buildAnalysisQuestionPrompt(question: string, analysisContext: s
     Please answer the following specific question about this analysis very concisely:
     "${question}"
     
-    Provide a brief, focused response that:
-    1. Answers the specific question directly in 1-2 sentences
-    2. Explains only the most critical information related to the question
-    3. Uses concrete examples only if absolutely necessary
-    4. Avoids unnecessary technical details
+    Provide a focused response that directly addresses the question.
+    Format your answer using simple markdown if needed.
+    Your response must be specific to what was asked and brief (2-3 sentences).
     
-    Format your answer to be concise and specific to what was asked.
-    The entire response should ideally be 2-3 sentences maximum.
+    If you cannot answer the question from the given analysis, explain why in 1 sentence.
   `;
 }

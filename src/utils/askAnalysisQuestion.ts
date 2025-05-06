@@ -50,26 +50,55 @@ export const askAnalysisQuestion = async (
       throw new Error(`Failed to get analysis answer: ${error.message}`);
     }
     
-    if (!data || !data.explanation) {
-      console.error("Empty response from Gemini API");
+    if (!data || !data.jobId) {
+      console.error("Invalid response format from Gemini API");
       return ERROR_MESSAGES.NO_ANSWER;
     }
     
-    // Process the response to extract just the answer part
-    const response = data.explanation;
-    console.log("Raw answer from Gemini:", response);
+    // Now poll for the result using the job ID
+    const jobId = data.jobId;
+    let jobComplete = false;
+    let attempts = 0;
+    let maxAttempts = 10;
     
-    // Return the cleaned-up answer, removing any system prompt or classification parts
-    const cleanedAnswer = cleanAnswerText(response);
-    
-    // Make sure we never return empty answers
-    if (!cleanedAnswer || cleanedAnswer.trim() === "") {
-      return "This content was classified as " + result.riskLevel + 
-        (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence` : "") + 
-        ". " + result.justification.substring(0, 100) + "...";
+    while (!jobComplete && attempts < maxAttempts) {
+      attempts++;
+      // Wait 1 second between checks
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const { data: jobData, error: jobError } = await supabase.functions.invoke(
+        `secure-gemini/job-status`,
+        { 
+          method: 'GET',
+          body: { jobId }
+        }
+      );
+      
+      if (jobError) {
+        console.error("Error checking job status:", jobError);
+        continue;
+      }
+      
+      if (jobData.status === 'completed' && jobData.result) {
+        jobComplete = true;
+        const response = jobData.result.explanation;
+        console.log("Raw answer from Gemini:", response);
+        
+        // Return the cleaned-up answer
+        const cleanedAnswer = cleanAnswerText(response);
+        return cleanedAnswer || ERROR_MESSAGES.NO_ANSWER;
+      } else if (jobData.status === 'failed') {
+        console.error('Gemini verification failed:', jobData.error);
+        break;
+      }
     }
     
-    return cleanedAnswer;
+    if (!jobComplete) {
+      console.error("Job timed out");
+      return ERROR_MESSAGES.API_ERROR;
+    }
+    
+    return ERROR_MESSAGES.NO_ANSWER;
   } catch (error) {
     console.error("Error asking analysis question:", error);
     return ERROR_MESSAGES.API_ERROR;
@@ -86,34 +115,47 @@ function cleanAnswerText(text: string): string {
   // Remove any analysis instruction text that might have been echoed back
   let cleanText = text;
   
-  // Check if the response contains any of our prompt text and remove it
-  if (text.includes("Answer the following question:")) {
-    const parts = text.split("Answer the following question:");
-    if (parts.length > 1) {
-      // Get the part after the prompt
-      const afterPrompt = parts[1].trim();
+  // Remove any system instructions that might have been echoed back
+  const promptMarkers = [
+    "I analyzed content with the following details:",
+    "Please answer the following specific question",
+    "Provide a brief, focused response",
+    "Format your answer to be",
+    "Please answer the following question:",
+    "CLASSIFICATION:"
+  ];
+  
+  for (const marker of promptMarkers) {
+    if (cleanText.includes(marker)) {
+      // Find the position after the marker and any subsequent instructions
+      const markerPos = cleanText.indexOf(marker);
+      // Look for the end of the instructions section
+      const possibleEndMarkers = ["\n\n", "\nAnswer:", "\nResponse:"];
+      let endPos = -1;
       
-      // Look for the question in the response
-      const questionStart = afterPrompt.indexOf("?");
-      if (questionStart > 0 && questionStart < 100) { // Only if question mark is near the start
-        cleanText = afterPrompt.substring(questionStart + 1).trim();
-      } else {
-        cleanText = afterPrompt;
+      for (const endMarker of possibleEndMarkers) {
+        const tempEndPos = cleanText.indexOf(endMarker, markerPos + marker.length);
+        if (tempEndPos !== -1 && (endPos === -1 || tempEndPos < endPos)) {
+          endPos = tempEndPos + endMarker.length;
+        }
+      }
+      
+      if (endPos !== -1) {
+        cleanText = cleanText.substring(endPos).trim();
       }
     }
   }
   
-  // If there's a clear answer section, extract just that
-  const answerSectionMatch = cleanText.match(/^.*?(answer|response):\s*([\s\S]+)$/i);
-  if (answerSectionMatch) {
-    cleanText = answerSectionMatch[2].trim();
+  // If the response starts with "Answer:" or similar, remove that prefix
+  cleanText = cleanText.replace(/^(Answer|Response):\s*/i, '');
+  
+  // If the original question is repeated, remove it
+  const questionMatch = cleanText.match(/^("[^"]+"|'[^']+'|[^.,!?:;]+\?)\s*/);
+  if (questionMatch) {
+    cleanText = cleanText.substring(questionMatch[0].length).trim();
   }
   
-  // Remove any quotation marks that might be wrapping the actual question
-  cleanText = cleanText.replace(/^['"](.+)['"]\s*/, '');
-  
-  // If the answer is still empty after cleaning, return the original text
-  return cleanText.trim() || text;
+  return cleanText;
 }
 
 /**
@@ -139,9 +181,9 @@ function buildAnalysisPrompt(question: string, result: ScamResult): string {
     Provide a brief, focused response that:
     1. Answers the specific question directly in 1-2 sentences
     2. Explains only the most critical information related to the question
-    3. Keeps technical details simple and short
+    3. Uses concrete examples only if necessary
     
-    Your response must be specific to the question asked, but extremely concise.
-    The entire response should be 2-3 sentences maximum. Be direct and to the point.
+    Format your response using markdown if needed for emphasis.
+    Be extremely concise - your entire answer should be 2-3 sentences maximum.
   `;
 }
