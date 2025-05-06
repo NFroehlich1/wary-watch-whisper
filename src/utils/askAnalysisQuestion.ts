@@ -70,8 +70,8 @@ export const askAnalysisQuestion = async (
         'secure-gemini/job-status',
         { 
           method: 'GET',
-          // Fix: Using params instead of query for passing parameters
-          params: { jobId }
+          // Fix: Using queryParams instead of params for passing URL parameters
+          queryParams: { jobId }
         }
       );
       
