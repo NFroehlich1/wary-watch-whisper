@@ -12,11 +12,13 @@ import { RiskLevel } from "../types";
  * @returns Die Risikostufe (safe, suspicious oder scam)
  */
 export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
-  if (aiResponse.toUpperCase().includes('RESULT: SCAM')) {
+  const upperResponse = aiResponse.toUpperCase();
+  
+  if (upperResponse.includes('RESULT: SCAM')) {
     return 'scam';
-  } else if (aiResponse.toUpperCase().includes('RESULT: HIGH SUSPICION')) {
+  } else if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
     return 'suspicious';
-  } else if (aiResponse.toUpperCase().includes('RESULT: SUSPICIOUS')) {
+  } else if (upperResponse.includes('RESULT: SUSPICIOUS')) {
     return 'suspicious';
   }
   
@@ -30,13 +32,13 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
  * @returns Der Erklärungstext zur Risikobewertung
  */
 export const extractExplanation = (aiResponse: string): string => {
-  const resultMatch = aiResponse.match(/RESULT: (SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i);
+  const resultPattern = /RESULT:\s*(SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i;
+  const resultMatch = aiResponse.match(resultPattern);
   
   if (resultMatch) {
-    // Alles nach der Klassifikationszeile zurückgeben
-    return aiResponse
-      .substring(aiResponse.indexOf(resultMatch[0]) + resultMatch[0].length)
-      .trim();
+    const resultIndex = aiResponse.indexOf(resultMatch[0]);
+    const afterResult = aiResponse.substring(resultIndex + resultMatch[0].length).trim();
+    return afterResult;
   }
   
   // Falls kein Klassifikationsmuster gefunden wurde, die gesamte Antwort zurückgeben
@@ -49,14 +51,16 @@ export const extractExplanation = (aiResponse: string): string => {
  * @returns Der Vertrauensgrad (high, medium oder low)
  */
 export const extractConfidenceLevel = (aiResponse: string): 'high' | 'medium' | 'low' => {
+  const upperResponse = aiResponse.toUpperCase();
+  
   if (
-    aiResponse.toUpperCase().includes('RESULT: SCAM') ||
-    aiResponse.toUpperCase().includes('RESULT: SAFE')
+    upperResponse.includes('RESULT: SCAM') ||
+    upperResponse.includes('RESULT: SAFE')
   ) {
     return 'high';
-  } else if (aiResponse.toUpperCase().includes('RESULT: HIGH SUSPICION')) {
+  } else if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
     return 'high';
-  } else if (aiResponse.toUpperCase().includes('RESULT: SUSPICIOUS')) {
+  } else if (upperResponse.includes('RESULT: SUSPICIOUS')) {
     return 'medium';
   }
   

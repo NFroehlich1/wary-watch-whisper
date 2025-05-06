@@ -18,6 +18,12 @@ export const useScamDetection = () => {
   return context;
 };
 
+// Constants for exponential backoff
+const MAX_JOB_CHECK_ATTEMPTS = 20; // Increased max attempts for more patience
+const INITIAL_BACKOFF_MS = 500;    // Start with a 500ms wait
+const MAX_BACKOFF_MS = 5000;       // Don't wait longer than 5 seconds between attempts
+const BACKOFF_FACTOR = 1.3;        // Increase wait time by this factor with each attempt
+
 export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScamResult | null>(null);
@@ -31,13 +37,23 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
     setGeminiOptionsState(prev => ({ ...prev, ...options }));
   };
   
+  /**
+   * Calculate backoff time for retry attempts using exponential backoff
+   */
+  const calculateBackoffTime = (attempt: number): number => {
+    // Use exponential backoff formula: initialBackoff * (factor ^ attempt)
+    const backoffTime = INITIAL_BACKOFF_MS * Math.pow(BACKOFF_FACTOR, attempt);
+    // Make sure we don't exceed the maximum backoff time
+    return Math.min(backoffTime, MAX_BACKOFF_MS);
+  };
+  
   // In a real app, this would make API calls to your backend
   const detectScam = async (content: string | File, type: DetectionType, language?: Language) => {
     setLoading(true);
     
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Simulate API delay - reduced to improve responsiveness
+      await new Promise(resolve => setTimeout(resolve, 300));
       
       // Initialize with default results in case AI analysis fails
       let detectedRisk: ScamResult;
@@ -65,23 +81,31 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
           // Now check for job completion with improved exponential backoff
           let jobComplete = false;
           let attempts = 0;
-          let maxAttempts = 15; // Increased max attempts for more patience
           let geminiResult;
           
-          while (!jobComplete && attempts < maxAttempts) {
+          while (!jobComplete && attempts < MAX_JOB_CHECK_ATTEMPTS) {
             attempts++;
-            // Use exponential backoff: wait longer between retries
-            const backoffTime = Math.min(1000 * Math.pow(1.5, attempts-1), 10000); // Max 10 seconds between attempts
+            
+            // Calculate delay using exponential backoff
+            const backoffTime = calculateBackoffTime(attempts-1);
             await new Promise(resolve => setTimeout(resolve, backoffTime));
             
-            const jobStatus = await getVerificationResult(jobId);
-            
-            if (jobStatus.status === 'completed' && jobStatus.result) {
-              jobComplete = true;
-              geminiResult = jobStatus.result;
-            } else if (jobStatus.status === 'failed') {
-              console.error('Gemini verification failed:', jobStatus.error);
-              break;
+            try {
+              const jobStatus = await getVerificationResult(jobId);
+              
+              if (jobStatus.status === 'completed' && jobStatus.result) {
+                jobComplete = true;
+                geminiResult = jobStatus.result;
+                break;
+              } else if (jobStatus.status === 'failed') {
+                console.error('Gemini verification failed:', jobStatus.error);
+                break;
+              }
+              // If still pending, we'll try again in the next iteration
+            } catch (statusError) {
+              // If we get an error checking status, log it but continue trying
+              console.error(`Error checking job ${jobId} status (attempt ${attempts}):`, statusError);
+              // Don't break the loop - we'll try again after the backoff delay
             }
           }
           

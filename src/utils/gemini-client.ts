@@ -21,6 +21,12 @@ export interface JobStatus {
   error?: string;
 }
 
+// Constants for timeout configuration
+const MAX_JOB_CHECK_ATTEMPTS = 20; // Maximum number of attempts to check job status
+const INITIAL_BACKOFF_MS = 500;    // Start with a 500ms wait
+const MAX_BACKOFF_MS = 5000;       // Don't wait longer than 5 seconds between attempts
+const BACKOFF_FACTOR = 1.3;        // Increase wait time by this factor with each attempt
+
 /**
  * Startet eine asynchrone Verifizierung von Inhalten über die Gemini AI
  * @param content - Der zu verifizierende Inhalt (URL oder Text)
@@ -34,16 +40,25 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
   try {
     console.log(`Starting Gemini verification for ${detectionType} content`);
     
+    // Trim content if too long to prevent timeouts
+    const trimmedContent = detectionType === 'url' 
+      ? content.substring(0, 500) 
+      : content.substring(0, 1000);
+    
     // Using a timeout promise for the function call
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Function call timed out")), 30000); // Increased from 15000
+      setTimeout(() => reject(new Error("Function call timed out")), 15000);
     });
     
     try {
       // Create race between function call and timeout
       const result = await Promise.race([
         supabase.functions.invoke('secure-gemini', {
-          body: { content, detectionType, language }
+          body: { 
+            content: trimmedContent, 
+            detectionType, 
+            language 
+          }
         }),
         timeoutPromise
       ]);

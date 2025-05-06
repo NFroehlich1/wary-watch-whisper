@@ -13,31 +13,43 @@ export function processAiResponse(aiResponse: string): {
   confidenceLevel: string, 
   explanation: string 
 } {
-  let riskLevel = 'safe'; // Default to 'safe'
+  // Default values
+  let riskLevel = 'safe';
   let confidenceLevel = 'medium';
   let explanation = '';
 
-  // Extract classification 
-  if (aiResponse.toUpperCase().includes('RESULT: SCAM')) {
+  // Simple string-based detection - case insensitive
+  const upperResponse = aiResponse.toUpperCase();
+  
+  if (upperResponse.includes('RESULT: SCAM')) {
     riskLevel = 'scam';
     confidenceLevel = 'high';
-  } else if (aiResponse.toUpperCase().includes('RESULT: HIGH SUSPICION')) {
+  } else if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
     riskLevel = 'suspicious';
     confidenceLevel = 'high';
-  } else if (aiResponse.toUpperCase().includes('RESULT: SUSPICIOUS')) {
+  } else if (upperResponse.includes('RESULT: SUSPICIOUS')) {
     riskLevel = 'suspicious';
     confidenceLevel = 'medium';
-  } else if (aiResponse.toUpperCase().includes('RESULT: SAFE')) {
+  } else if (upperResponse.includes('RESULT: SAFE')) {
     riskLevel = 'safe';
     confidenceLevel = 'high';
   }
 
-  // Extract explanation (everything after the classification line)
-  const resultMatch = aiResponse.match(/RESULT: (SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i);
+  // Extract explanation (everything after the first result line)
+  const resultPattern = /RESULT:\s*(SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i;
+  const resultMatch = aiResponse.match(resultPattern);
+  
   if (resultMatch) {
-    explanation = aiResponse.substring(aiResponse.indexOf(resultMatch[0]) + resultMatch[0].length).trim();
+    const resultIndex = aiResponse.indexOf(resultMatch[0]);
+    const afterResult = aiResponse.substring(resultIndex + resultMatch[0].length).trim();
+    explanation = afterResult;
   } else {
-    explanation = aiResponse;
+    explanation = aiResponse.trim();
+  }
+
+  // If explanation is too long, truncate it
+  if (explanation.length > 500) {
+    explanation = explanation.substring(0, 500) + "...";
   }
 
   return { riskLevel, confidenceLevel, explanation };
