@@ -58,9 +58,8 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
         });
         
         // Provide a fallback response based on the analysis data we already have
-        setAnswer(`Based on the analysis, this content was classified as ${result.riskLevel}` + 
-          (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence.` : '.') +
-          ` The analysis determined: ${result.justification}`);
+        setAnswer(`This content was classified as ${result.riskLevel}` + 
+          (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence.` : '.'));
       } else {
         setAnswer(response);
       }
@@ -68,10 +67,9 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
       form.reset();
     } catch (error) {
       console.error("Failed to get answer:", error);
-      setAnswer("I can analyze what I know about this content: " + 
-        `This was classified as ${result.riskLevel}` + 
-        (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence.` : '.') + 
-        ` ${result.justification}`);
+      setAnswer("This was classified as " + 
+        `${result.riskLevel}` + 
+        (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence.` : '.'));
       toast({
         title: "Analysis Available",
         description: "I'll provide what I know about this content.",
@@ -94,7 +92,7 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
                 <FormItem className="flex-1">
                   <FormControl>
                     <Input 
-                      placeholder="Ask for more detailed explanations..." 
+                      placeholder="Ask for specific explanations..." 
                       {...field} 
                       disabled={answerLoading}
                     />
@@ -125,8 +123,8 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
       </Form>
       
       {answer && (
-        <div className="mt-3 p-4 bg-primary/5 rounded-md border border-primary/10">
-          <p className="text-sm whitespace-pre-line">{answer}</p>
+        <div className="mt-3 p-3 bg-primary/5 rounded-md border border-primary/10">
+          <p className="text-sm leading-relaxed">{answer}</p>
         </div>
       )}
     </div>

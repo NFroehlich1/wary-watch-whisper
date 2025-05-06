@@ -10,18 +10,26 @@
  */
 export function buildUrlPrompt(url: string): string {
   return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". 
-  Please respond with a structured answer starting with one of these exact classifications:
+  Please respond with a structured markdown answer starting with one of these exact classifications:
   - CLASSIFICATION: SAFE if you're highly confident it's legitimate
   - CLASSIFICATION: SUSPICIOUS if there are minor concerns but not definitively malicious
   - CLASSIFICATION: HIGH SUSPICION if there are significant red flags but not 100% certain
   - CLASSIFICATION: SCAM if you're highly confident it's malicious
   
-  Then provide a thorough and detailed justification in English, explaining:
-  - Domain reputation and age if relevant
-  - URL structure concerns
-  - Red flags or safety indicators
-  - Potential threats or what makes it safe
-  - Specific signs of phishing, if any`;
+  Then provide a concise markdown analysis in this exact format:
+
+  ## 🧠 Quick Analysis
+
+  **🔑 Keywords:** \`keyword_1\`, \`keyword_2\`, \`keyword_3\`  
+  **🗣 Common Usage:** Often used to **general_purpose** (e.g. trigger urgency, build trust, mislead).
+
+  **📌 In This Context:**  
+  Here, these terms are used to **specific_intent**, likely aiming to **effect_on_reader**.
+
+  **✅ Conclusion:**  
+  This language pattern suggests **risk_level**, especially due to **primary_reason**.
+
+  Fill in each placeholder based on your analysis. Keep descriptions brief and to the point.`;
 }
 
 /**
@@ -31,18 +39,26 @@ export function buildUrlPrompt(url: string): string {
  */
 export function buildTextPrompt(text: string): string {
   return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". 
-  Please respond with a structured answer starting with one of these exact classifications:
+  Please respond with a structured markdown answer starting with one of these exact classifications:
   - CLASSIFICATION: SAFE if you're highly confident it's legitimate
   - CLASSIFICATION: SUSPICIOUS if there are minor concerns but not definitively malicious
   - CLASSIFICATION: HIGH SUSPICION if there are significant red flags but not 100% certain
   - CLASSIFICATION: SCAM if you're highly confident it's malicious
   
-  Then provide a detailed and thorough justification in English, explaining:
-  - Specific language patterns or psychological tactics used
-  - Presence of urgency, threats, or promises
-  - Requests for personal information or financial details
-  - Grammar, spelling, or formatting that may indicate a scam
-  - Context that makes the message safe or suspicious`;
+  Then provide a concise markdown analysis in this exact format:
+
+  ## 🧠 Quick Analysis
+
+  **🔑 Keywords:** \`keyword_1\`, \`keyword_2\`, \`keyword_3\`  
+  **🗣 Common Usage:** Often used to **general_purpose** (e.g. trigger urgency, build trust, mislead).
+
+  **📌 In This Context:**  
+  Here, these terms are used to **specific_intent**, likely aiming to **effect_on_reader**.
+
+  **✅ Conclusion:**  
+  This language pattern suggests **risk_level**, especially due to **primary_reason**.
+
+  Fill in each placeholder based on your analysis. Keep descriptions brief and to the point.`;
 }
 
 /**
@@ -57,21 +73,16 @@ export function buildAnalysisQuestionPrompt(question: string, analysisContext: s
     I analyzed content with the following details:
     ${analysisContext}
     
-    Please answer the following specific question about this analysis:
+    Please answer the following specific question about this analysis very concisely:
     "${question}"
     
-    Provide a detailed, educational response that:
-    1. Answers the specific question directly and thoroughly
-    2. Explains relevant concepts or terms
-    3. References specific aspects of the analyzed content when relevant
-    4. Includes concrete examples if applicable
-    5. Explains technical details in a way that's easy to understand
+    Provide a brief, focused response that:
+    1. Answers the specific question directly in 1-2 sentences
+    2. Explains only the most critical information related to the question
+    3. Uses concrete examples only if absolutely necessary
+    4. Avoids unnecessary technical details
     
-    If the question asks about specific details that weren't covered in the original analysis,
-    make reasonable inferences based on the information provided, but clearly indicate 
-    when you're making an inference rather than stating a fact from the analysis.
-    
-    Format your answer to be informative and educational, focusing specifically on what
-    the user asked about.
+    Format your answer to be concise and specific to what was asked.
+    The entire response should ideally be 2-3 sentences maximum.
   `;
 }

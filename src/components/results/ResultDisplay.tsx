@@ -44,8 +44,7 @@ const ResultDisplay = () => {
         </div>
         
         <div>
-          <h4 className="font-medium text-sm text-muted-foreground mb-1">Analysis:</h4>
-          <p className="text-base">{getVerificationText()}</p>
+          <div className="markdown-content prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: getVerificationText() }}></div>
         </div>
         
         <LanguageInfo detectedLanguage={result.detectedLanguage} />

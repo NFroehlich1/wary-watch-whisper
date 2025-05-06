@@ -87,7 +87,7 @@ function cleanAnalysisQuestionResponse(response: string): string {
   const promptMarkers = [
     "I analyzed content with the following details:",
     "Please answer the following specific question",
-    "Provide a detailed, educational response",
+    "Provide a brief, focused response",
     "Format your answer to be",
     "Please answer the following question:"
   ];

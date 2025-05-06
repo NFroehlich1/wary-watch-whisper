@@ -64,10 +64,9 @@ export const askAnalysisQuestion = async (
     
     // Make sure we never return empty answers
     if (!cleanedAnswer || cleanedAnswer.trim() === "") {
-      return "Based on the analysis of this content, I can provide the following information: " + 
-        "This was classified as " + result.riskLevel + 
+      return "This content was classified as " + result.riskLevel + 
         (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence` : "") + 
-        ". " + result.justification;
+        ". " + result.justification.substring(0, 100) + "...";
     }
     
     return cleanedAnswer;
@@ -134,20 +133,15 @@ function buildAnalysisPrompt(question: string, result: ScamResult): string {
     I analyzed a message or URL with the following details:
     ${analysisContext}
     
-    Please answer the following specific question about this analysis:
+    Please answer the following specific question about this analysis very concisely:
     "${question}"
     
-    Provide a detailed, educational response that:
-    1. Answers the specific question directly and thoroughly
-    2. Explains relevant concepts or terms
-    3. References specific aspects of the analyzed content when relevant
-    4. Includes concrete examples if applicable
-    5. Explains technical details in a way that's easy to understand
+    Provide a brief, focused response that:
+    1. Answers the specific question directly in 1-2 sentences
+    2. Explains only the most critical information related to the question
+    3. Keeps technical details simple and short
     
-    Your response must be detailed, specific to the question asked, and focused on 
-    the analyzed content. Never provide generic responses - always tailor your answer
-    to the specific question and analysis context.
-    
-    If you don't know, say so specifically rather than providing a generic response.
+    Your response must be specific to the question asked, but extremely concise.
+    The entire response should be 2-3 sentences maximum. Be direct and to the point.
   `;
 }
