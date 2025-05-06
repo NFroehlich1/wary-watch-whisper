@@ -62,8 +62,10 @@ export const getVerificationResult = async (jobId: string): Promise<JobStatus> =
       'secure-gemini/job-status',
       { 
         method: 'GET',
-        // Fix: Using queryParams instead of params for passing URL parameters
-        queryParams: { jobId }
+        // Fix: Using the correct approach for URL parameters
+        headers: {
+          'x-urlencoded-params': `jobId=${encodeURIComponent(jobId)}`
+        }
       }
     );
     

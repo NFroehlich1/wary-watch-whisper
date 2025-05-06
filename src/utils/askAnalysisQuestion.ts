@@ -66,12 +66,14 @@ export const askAnalysisQuestion = async (
       // Wait 1 second between checks
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      // Fix: Using the correct approach for URL parameters
       const { data: jobData, error: jobError } = await supabase.functions.invoke(
         'secure-gemini/job-status',
         { 
           method: 'GET',
-          // Fix: Using queryParams instead of params for passing URL parameters
-          queryParams: { jobId }
+          headers: {
+            'x-urlencoded-params': `jobId=${encodeURIComponent(jobId)}`
+          }
         }
       );
       
