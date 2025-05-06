@@ -23,20 +23,25 @@ const ERROR_MESSAGES = {
  * 
  * @param question - The question to ask
  * @param result - The scam detection result
+ * @param userEmoji - Optional user emoji reaction to include in the analysis
  * @param geminiOptions - Configuration for the Gemini AI
  * @returns The answer to the question
  */
 export const askAnalysisQuestion = async (
   question: string, 
   result: ScamResult, 
-  geminiOptions: GeminiOptions
+  userEmoji?: string | null,
+  geminiOptions?: GeminiOptions
 ): Promise<string> => {
-  if (!geminiOptions.enabled) {
+  if (geminiOptions && !geminiOptions.enabled) {
     return ERROR_MESSAGES.DISABLED;
   }
   
   try {
     console.log("Sending analysis question directly to Gemini:", question);
+    if (userEmoji) {
+      console.log("Including user emoji reaction:", userEmoji);
+    }
     
     // Call the new direct endpoint for immediate answers without job creation/polling
     const { data, error } = await supabase.functions.invoke('secure-gemini/direct-question', {
@@ -44,7 +49,8 @@ export const askAnalysisQuestion = async (
         question,
         content: result.originalContent,
         riskLevel: result.riskLevel,
-        explanation: result.justification || result.aiVerification || ""
+        explanation: result.justification || result.aiVerification || "",
+        userEmoji: userEmoji || null
       }
     });
     
@@ -68,7 +74,7 @@ export const askAnalysisQuestion = async (
       return ERROR_MESSAGES.NO_ANSWER;
     }
     
-    // Return the cleaned-up answer directly - no more polling!
+    // Return the cleaned-up answer directly
     console.log("Direct answer from Gemini:", data.answer.substring(0, 100) + (data.answer.length > 100 ? '...' : ''));
     const cleanedAnswer = cleanAnswerText(data.answer);
     return cleanedAnswer || ERROR_MESSAGES.NO_ANSWER;

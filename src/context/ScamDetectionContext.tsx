@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { ScamResult, DetectionType, Language, GeminiOptions } from '../types';
 import { verifyWithGemini, getVerificationResult } from '../utils/gemini';
@@ -211,8 +210,13 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
     playAudioFromResult(result, () => setAudioPlaying(false));
   };
   
-  const askAnalysisQuestion = async (question: string, result: ScamResult): Promise<string> => {
-    return await askQuestion(question, result, geminiOptions);
+  // Update the askAnalysisQuestion function to include the userEmoji parameter
+  const askAnalysisQuestion = async (
+    question: string, 
+    result: ScamResult, 
+    userEmoji?: string | null
+  ): Promise<string> => {
+    return await askQuestion(question, result, userEmoji, geminiOptions);
   };
   
   return (

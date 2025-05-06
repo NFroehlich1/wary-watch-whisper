@@ -21,10 +21,11 @@ type QuestionForm = z.infer<typeof questionSchema>;
 
 interface AnalysisQuestionProps {
   result: ScamResult;
-  askAnalysisQuestion: (question: string, result: ScamResult) => Promise<string>;
+  askAnalysisQuestion: (question: string, result: ScamResult, userEmoji?: string | null) => Promise<string>;
+  userEmoji?: string | null;
 }
 
-const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysisQuestion }) => {
+const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysisQuestion, userEmoji }) => {
   const [answerLoading, setAnswerLoading] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
   const { toast } = useToast();
@@ -37,15 +38,15 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
     },
   });
 
-  // Handle question submission - now using the optimized direct endpoint
+  // Handle question submission - now including user emoji if available
   const onSubmitQuestion = async (data: QuestionForm) => {
     setAnswerLoading(true);
     setAnswer(null);
     
     try {
-      console.log("Submitting question:", data.question);
-      // Use the optimized direct question method
-      const response = await askAnalysisQuestion(data.question, result);
+      console.log("Submitting question:", data.question, "User emoji:", userEmoji);
+      // Pass the user's emoji reaction to the analysis function
+      const response = await askAnalysisQuestion(data.question, result, userEmoji);
       console.log("Received answer:", response);
       
       if (!response || response.trim() === "") {

@@ -34,16 +34,23 @@ export function buildTextPrompt(text) {
 /**
  * Builds a focused analysis question prompt
  * Optimized for faster direct answers
+ * Now including the user's emoji reaction if provided
  */
-export function buildAnalysisQuestionPrompt(question, content, riskLevel, explanation) {
-  // Format simplified for speed while maintaining context
-  return `You are analyzing content classified as: ${riskLevel.toUpperCase()}
+export function buildAnalysisQuestionPrompt(question, content, riskLevel, explanation, userEmoji = null) {
+  let prompt = `You are analyzing content classified as: ${riskLevel.toUpperCase()}
   
 The content: "${content.substring(0, 200)}${content.length > 200 ? '...' : ''}"
-Previous analysis: ${explanation.substring(0, 100)}${explanation.length > 100 ? '...' : ''}
+Previous analysis: ${explanation.substring(0, 100)}${explanation.length > 100 ? '...' : ''}`;
+
+  // Include the user's emotional reaction via emoji if available
+  if (userEmoji) {
+    prompt += `\nUser reaction emoji: ${userEmoji}`;
+  }
   
-Question: "${question}"
+  prompt += `\nQuestion: "${question}"
   
 Answer the question directly and briefly (2-3 sentences max). 
 No introduction or prefix like "Answer:" needed.`;
+
+  return prompt;
 }

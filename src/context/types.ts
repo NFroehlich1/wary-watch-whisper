@@ -10,5 +10,5 @@ export interface ScamDetectionContextType {
   audioPlaying: boolean;
   geminiOptions: GeminiOptions;
   setGeminiOptions: (options: Partial<GeminiOptions>) => void;
-  askAnalysisQuestion: (question: string, result: ScamResult) => Promise<string>;
+  askAnalysisQuestion: (question: string, result: ScamResult, userEmoji?: string | null) => Promise<string>;
 }

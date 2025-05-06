@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useScamDetection } from '@/context/ScamDetectionContext';
@@ -18,6 +18,7 @@ interface ResultDisplayProps {
 
 const ResultDisplay: React.FC<ResultDisplayProps> = ({ result }) => {
   const { playAudio, audioPlaying, askAnalysisQuestion } = useScamDetection();
+  const [userEmoji, setUserEmoji] = useState<string | null>(null);
   
   if (!result) return null;
   
@@ -27,6 +28,10 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result }) => {
       return result.aiVerification;
     }
     return result.justification;
+  };
+
+  const handleEmojiSelected = (emoji: string | null) => {
+    setUserEmoji(emoji);
   };
   
   return (
@@ -56,14 +61,16 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ result }) => {
         
         <ContentDisplay content={result.originalContent} />
 
-        <AnalysisQuestion 
-          result={result}
-          askAnalysisQuestion={askAnalysisQuestion}
-        />
-
         <EmojiReaction 
           riskLevel={result.riskLevel}
           confidenceLevel={result.confidenceLevel}
+          onEmojiSelected={handleEmojiSelected}
+        />
+
+        <AnalysisQuestion 
+          result={result}
+          askAnalysisQuestion={askAnalysisQuestion}
+          userEmoji={userEmoji}
         />
       </CardContent>
       <CardFooter>
