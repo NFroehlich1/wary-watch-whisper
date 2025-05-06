@@ -34,18 +34,22 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
   try {
     console.log(`Starting Gemini verification for ${detectionType} content`);
     
-    // Aufruf der sicheren Supabase Edge Function, um den Job zu starten
-    // Use a reasonable timeout for the function call
-    const functionCallController = new AbortController();
-    const functionCallTimeout = setTimeout(() => functionCallController.abort(), 15000);
+    // Using a timeout promise instead of AbortController with signal
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Function call timed out")), 15000);
+    });
     
     try {
-      const { data, error } = await supabase.functions.invoke('secure-gemini', {
-        body: { content, detectionType, language },
-        signal: functionCallController.signal
-      });
+      // Create race between function call and timeout
+      const result = await Promise.race([
+        supabase.functions.invoke('secure-gemini', {
+          body: { content, detectionType, language }
+        }),
+        timeoutPromise
+      ]);
       
-      clearTimeout(functionCallTimeout);
+      // Since result will be from the function call if successful
+      const { data, error } = result as any;
       
       if (error) {
         console.error('Error calling secure-gemini function:', error);
@@ -68,7 +72,10 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
         jobId: data.jobId
       };
     } catch (functionError) {
-      clearTimeout(functionCallTimeout);
+      if (functionError.name === "TimeoutError" || functionError.message === "Function call timed out") {
+        console.error('Function call timed out');
+        throw new Error('Gemini verification request timed out');
+      }
       throw functionError;
     }
   } catch (error) {
@@ -91,14 +98,14 @@ export const getVerificationResult = async (jobId: string): Promise<JobStatus> =
   try {
     console.log(`Checking status for Gemini job: ${jobId}`);
     
-    // Use URL parameters for jobId - simplest and most reliable approach
+    // Use headers to pass jobId instead of queryParams
     const { data, error } = await supabase.functions.invoke(
       'secure-gemini/job-status',
       { 
-        method: 'GET',
-        queryParams: { jobId },
+        method: 'POST',
+        body: { jobId },
         headers: {
-          'x-jobid': jobId // Backup method
+          'x-jobid': jobId
         }
       }
     );

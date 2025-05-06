@@ -65,7 +65,7 @@ export const ScamDetectionProvider = ({ children }: { children: ReactNode }) => 
           // Now check for job completion with improved exponential backoff
           let jobComplete = false;
           let attempts = 0;
-          let maxAttempts = 12; // Increased max attempts
+          let maxAttempts = 15; // Increased max attempts for more patience
           let geminiResult;
           
           while (!jobComplete && attempts < maxAttempts) {

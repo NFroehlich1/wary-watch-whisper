@@ -1,4 +1,3 @@
-
 // Follow Deno standards for imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
@@ -81,29 +80,27 @@ async function handleJobStatus(req, url) {
   try {
     let jobId = null;
     
-    // Option 1: Get jobId from URL search params (standard approach)
-    if (url.searchParams.has('jobId')) {
-      jobId = url.searchParams.get('jobId');
-      console.log('Retrieved jobId from URL params:', jobId);
-    }
-    // Option 2: Get jobId from request body (used for POST requests)
-    else if (req.method === 'POST') {
-      try {
-        const body = await req.json();
+    // Try to get jobId from multiple sources
+    
+    // Option 1: Get jobId from request body (for POST requests)
+    try {
+      const body = await req.json();
+      if (body && body.jobId) {
         jobId = body.jobId;
         console.log('Retrieved jobId from request body:', jobId);
-      } catch (e) {
-        console.error('Error parsing request body:', e);
       }
+    } catch (e) {
+      console.error('Error parsing request body:', e);
     }
-    // Option 3: Get jobId from x-jobid header (fallback)
-    else if (req.headers.has('x-jobid')) {
+    
+    // Option 2: Get jobId from x-jobid header (fallback)
+    if (!jobId && req.headers.has('x-jobid')) {
       jobId = req.headers.get('x-jobid');
       console.log('Retrieved jobId from x-jobid header:', jobId);
     }
     
     if (!jobId) {
-      return createErrorResponse("Missing jobId parameter. Please provide jobId in URL, body or header.", 400);
+      return createErrorResponse("Missing jobId parameter. Please provide jobId in body or header.", 400);
     }
     
     console.log(`Handling job status request for job: ${jobId}`);
