@@ -10,7 +10,6 @@ import ContentDisplay from './ContentDisplay';
 import AnalysisQuestion from './AnalysisQuestion';
 import EmojiReaction from './EmojiReaction';
 import { getTranslation } from '@/utils/language';
-import ReactMarkdown from 'react-markdown';
 
 const ResultDisplay = () => {
   const { result, playAudio, audioPlaying, askAnalysisQuestion } = useScamDetection();
@@ -45,9 +44,7 @@ const ResultDisplay = () => {
         </div>
         
         <div className="prose prose-sm max-w-none dark:prose-invert">
-          <ReactMarkdown className="markdown-content">
-            {getVerificationText()}
-          </ReactMarkdown>
+          <div className="whitespace-pre-line">{getVerificationText()}</div>
         </div>
         
         <LanguageInfo detectedLanguage={result.detectedLanguage} />

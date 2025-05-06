@@ -20,7 +20,7 @@ export function processAiResponse(aiResponse: string): {
   // Check if this is an analysis question response rather than a classification
   if (aiResponse.includes("Answer the following question:") || 
       aiResponse.toLowerCase().includes("question:") ||
-      !aiResponse.toLowerCase().includes("classification:")) {
+      !aiResponse.toLowerCase().includes("result:")) {
     // This is likely a response to a question, not a classification
     explanation = aiResponse;
     
@@ -29,31 +29,23 @@ export function processAiResponse(aiResponse: string): {
     
     // Make sure we don't return an empty explanation
     if (!explanation.trim()) {
-      explanation = "I don't have enough information to answer this specific question about the analysis. Could you try asking something more specific about the content being analyzed?";
+      explanation = "I don't have enough information to answer this specific question about the analysis.";
     }
     
     return { riskLevel, confidenceLevel, explanation };
   }
 
-  // Extract classification and confidence level - be very conservative with "suspicious" classifications
-  if (aiResponse.toLowerCase().includes('classification: scam')) {
+  // Extract classification and confidence level using the new RESULT: format
+  if (aiResponse.toUpperCase().includes('RESULT: SCAM')) {
     riskLevel = 'scam';
     confidenceLevel = 'high';
-  } else if (aiResponse.toLowerCase().includes('classification: high suspicion')) {
-    // Only classify as high suspicion if explicitly stated
+  } else if (aiResponse.toUpperCase().includes('RESULT: HIGH SUSPICION')) {
     riskLevel = 'suspicious';
     confidenceLevel = 'high';
-  } else if (
-    aiResponse.toLowerCase().includes('classification: suspicious') &&
-    (aiResponse.toLowerCase().includes('urgent') && 
-     (aiResponse.toLowerCase().includes('password') ||
-      aiResponse.toLowerCase().includes('credential') ||
-      aiResponse.toLowerCase().includes('bank details')))
-  ) {
-    // Only classify as suspicious if multiple high-risk indicators are present
+  } else if (aiResponse.toUpperCase().includes('RESULT: SUSPICIOUS')) {
     riskLevel = 'suspicious';
     confidenceLevel = 'medium';
-  } else if (aiResponse.toLowerCase().includes('classification: safe')) {
+  } else if (aiResponse.toUpperCase().includes('RESULT: SAFE')) {
     riskLevel = 'safe';
     confidenceLevel = 'high';
   } else {
@@ -63,9 +55,9 @@ export function processAiResponse(aiResponse: string): {
   }
 
   // Extract explanation (everything after the classification line)
-  const classificationMatch = aiResponse.match(/CLASSIFICATION: (SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i);
-  if (classificationMatch) {
-    explanation = aiResponse.substring(aiResponse.indexOf(classificationMatch[0]) + classificationMatch[0].length).trim();
+  const resultMatch = aiResponse.match(/RESULT: (SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i);
+  if (resultMatch) {
+    explanation = aiResponse.substring(aiResponse.indexOf(resultMatch[0]) + resultMatch[0].length).trim();
   } else {
     explanation = aiResponse;
   }

@@ -1,4 +1,3 @@
-
 /**
  * Generiert Prompts für die Gemini AI Anfragen
  * Diese Datei enthält Funktionen zur Erstellung strukturierter Prompts
@@ -11,26 +10,26 @@ import { Language } from "../types";
  */
 export const getUrlPromptInEnglish = (url: string): string => {
   return `Analyze if this URL is safe, suspicious or a scam. URL: "${url}". 
-  Please respond with a structured markdown answer starting with one of these exact classifications:
-  - CLASSIFICATION: SAFE if you're highly confident it's legitimate
-  - CLASSIFICATION: SUSPICIOUS if there are minor concerns but not definitively malicious
-  - CLASSIFICATION: HIGH SUSPICION if there are significant red flags but not 100% certain
-  - CLASSIFICATION: SCAM if you're highly confident it's malicious
+  Please respond with a structured answer starting with one of these exact classifications:
+  RESULT: SAFE if you're highly confident it's legitimate
+  RESULT: SUSPICIOUS if there are minor concerns but not definitively malicious
+  RESULT: HIGH SUSPICION if there are significant red flags but not 100% certain
+  RESULT: SCAM if you're highly confident it's malicious
   
-  Then provide a concise markdown analysis in this exact format:
+  Then provide a concise plain text analysis in this format:
 
-  ## 🧠 Quick Analysis
+  ANALYSIS:
+  Brief description of what was found and why this classification was chosen.
 
-  **🔑 Keywords:** \`keyword_1\`, \`keyword_2\`, \`keyword_3\`  
-  **🗣 Common Usage:** Often used to **general_purpose** (e.g. trigger urgency, build trust, mislead).
+  KEY POINTS:
+  - Point 1
+  - Point 2
+  - Point 3
 
-  **📌 In This Context:**  
-  Here, these terms are used to **specific_intent**, likely aiming to **effect_on_reader**.
+  CONCLUSION:
+  Final assessment in 1-2 sentences.
 
-  **✅ Conclusion:**  
-  This language pattern suggests **risk_level**, especially due to **primary_reason**.
-
-  Fill in each placeholder based on your analysis. Keep descriptions brief and to the point.`;
+  Use plain text only, no special formatting.`;
 };
 
 /**
@@ -38,26 +37,26 @@ export const getUrlPromptInEnglish = (url: string): string => {
  */
 export const getTextPromptInEnglish = (text: string): string => {
   return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". 
-  Please respond with a structured markdown answer starting with one of these exact classifications:
-  - CLASSIFICATION: SAFE if you're highly confident it's legitimate
-  - CLASSIFICATION: SUSPICIOUS if there are minor concerns but not definitively malicious
-  - CLASSIFICATION: HIGH SUSPICION if there are significant red flags but not 100% certain
-  - CLASSIFICATION: SCAM if you're highly confident it's malicious
+  Please respond with a structured answer starting with one of these exact classifications:
+  RESULT: SAFE if you're highly confident it's legitimate
+  RESULT: SUSPICIOUS if there are minor concerns but not definitively malicious
+  RESULT: HIGH SUSPICION if there are significant red flags but not 100% certain
+  RESULT: SCAM if you're highly confident it's malicious
   
-  Then provide a concise markdown analysis in this exact format:
+  Then provide a concise plain text analysis in this format:
 
-  ## 🧠 Quick Analysis
+  ANALYSIS:
+  Brief description of what was found and why this classification was chosen.
 
-  **🔑 Keywords:** \`keyword_1\`, \`keyword_2\`, \`keyword_3\`  
-  **🗣 Common Usage:** Often used to **general_purpose** (e.g. trigger urgency, build trust, mislead).
+  KEY POINTS:
+  - Point 1
+  - Point 2
+  - Point 3
 
-  **📌 In This Context:**  
-  Here, these terms are used to **specific_intent**, likely aiming to **effect_on_reader**.
+  CONCLUSION:
+  Final assessment in 1-2 sentences.
 
-  **✅ Conclusion:**  
-  This language pattern suggests **risk_level**, especially due to **primary_reason**.
-
-  Fill in each placeholder based on your analysis. Keep descriptions brief and to the point.`;
+  Use plain text only, no special formatting.`;
 };
 
 /**

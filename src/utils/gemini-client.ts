@@ -34,9 +34,9 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
   try {
     console.log(`Starting Gemini verification for ${detectionType} content`);
     
-    // Using a timeout promise instead of AbortController with signal
+    // Using a timeout promise for the function call
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Function call timed out")), 15000);
+      setTimeout(() => reject(new Error("Function call timed out")), 30000); // Increased from 15000
     });
     
     try {
@@ -98,7 +98,7 @@ export const getVerificationResult = async (jobId: string): Promise<JobStatus> =
   try {
     console.log(`Checking status for Gemini job: ${jobId}`);
     
-    // Use headers to pass jobId instead of queryParams
+    // Use POST method with body instead of queryParams to pass jobId
     const { data, error } = await supabase.functions.invoke(
       'secure-gemini/job-status',
       { 

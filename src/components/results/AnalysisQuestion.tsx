@@ -9,7 +9,6 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { ScamResult } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import ReactMarkdown from 'react-markdown';
 
 // Form schema with less strict validation
 const questionSchema = z.object({
@@ -59,8 +58,8 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
         });
         
         // Provide a fallback response based on the analysis data we already have
-        const fallbackResponse = `This content was classified as **${result.riskLevel}**` + 
-          (result.confidenceLevel ? ` with **${result.confidenceLevel} confidence**` : '.') +
+        const fallbackResponse = `This content was classified as ${result.riskLevel}` + 
+          (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence` : '.') +
           `\n\nThe quick analysis showed: ${extractQuickAnalysisFromResult(result)}`;
         
         setAnswer(fallbackResponse);
@@ -71,9 +70,9 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
       form.reset();
     } catch (error) {
       console.error("Failed to get answer:", error);
-      // Prepare a fallback answer that includes markdown formatting
-      const fallbackResponse = `This was classified as **${result.riskLevel}**` + 
-        (result.confidenceLevel ? ` with **${result.confidenceLevel} confidence**` : '.') +
+      // Prepare a fallback answer without markdown
+      const fallbackResponse = `This was classified as ${result.riskLevel}` + 
+        (result.confidenceLevel ? ` with ${result.confidenceLevel} confidence` : '.') +
         `\n\nThe quick analysis showed: ${extractQuickAnalysisFromResult(result)}`;
       
       setAnswer(fallbackResponse);
@@ -90,16 +89,22 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
   const extractQuickAnalysisFromResult = (result: ScamResult): string => {
     const justificationText = result.aiVerification || result.justification || '';
     
-    // Look for the Quick Analysis section in the justification
-    if (justificationText.includes('🧠 Quick Analysis')) {
-      const quickAnalysisSection = justificationText
-        .split('## 🧠 Quick Analysis')[1]
-        .split('##')[0]
+    // Look for the Analysis section in the justification
+    if (justificationText.includes('ANALYSIS:')) {
+      const analysisSection = justificationText
+        .split('ANALYSIS:')[1]
+        .split('KEY POINTS:')[0]
         .trim();
-      return quickAnalysisSection;
+      return analysisSection;
+    } else if (justificationText.includes('KEY POINTS:')) {
+      const pointsSection = justificationText
+        .split('KEY POINTS:')[1]
+        .split('CONCLUSION:')[0]
+        .trim();
+      return pointsSection;
     }
     
-    return '';
+    return justificationText.substring(0, 200) + '...';
   };
 
   return (
@@ -147,9 +152,9 @@ const AnalysisQuestion: React.FC<AnalysisQuestionProps> = ({ result, askAnalysis
       
       {answer && (
         <div className="mt-3 p-3 bg-primary/5 rounded-md border border-primary/10">
-          <ReactMarkdown className="text-sm leading-relaxed prose prose-sm max-w-none dark:prose-invert">
+          <div className="text-sm leading-relaxed whitespace-pre-line">
             {answer}
-          </ReactMarkdown>
+          </div>
         </div>
       )}
     </div>

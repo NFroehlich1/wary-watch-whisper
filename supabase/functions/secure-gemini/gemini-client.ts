@@ -16,8 +16,8 @@ export async function callGeminiAPI(prompt: string, apiKey: string) {
   console.log('Making request to Gemini API...');
 
   try {
-    // Reduce prompt complexity if it's too long
-    const trimmedPrompt = prompt.length > 8000 ? prompt.substring(0, 8000) : prompt;
+    // Reduce prompt complexity by more aggressively trimming it if it's too long
+    const trimmedPrompt = prompt.length > 4000 ? prompt.substring(0, 4000) : prompt;
     
     // Create an AbortController with a longer timeout (45 seconds)
     const controller = new AbortController();
@@ -36,11 +36,11 @@ export async function callGeminiAPI(prompt: string, apiKey: string) {
               text: trimmedPrompt
             }]
           }],
-          // Optimized parameters to improve response time and reliability
+          // More optimized parameters to improve response time and reliability
           generationConfig: {
-            maxOutputTokens: 800,
-            temperature: 0.1,
-            topP: 0.9,
+            maxOutputTokens: 400, // Reduced from 800 for faster responses
+            temperature: 0.0,     // Set to 0 for most deterministic responses
+            topP: 0.95,
             topK: 40
           }
         }),
