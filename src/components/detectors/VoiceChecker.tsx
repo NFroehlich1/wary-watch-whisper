@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { useScamDetection } from '@/context/ScamDetectionContext';
@@ -153,7 +152,7 @@ const VoiceChecker = () => {
         </p>
       </div>
       
-      <Alert variant="outline" className="bg-muted/50">
+      <Alert className="bg-muted/50">
         <AlertDescription>
           Our AI specifically looks for urgency tactics, pressure to share personal information, and common phone scam patterns.
         </AlertDescription>
