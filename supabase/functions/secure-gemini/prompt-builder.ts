@@ -22,6 +22,14 @@ export function buildUrlPrompt(url) {
  */
 export function buildTextPrompt(text) {
   return `Analyze if this message is safe or suspicious or a scam: "${text}". 
+  
+  IMPORTANT GUIDELINES:
+  - Standard greetings like "Hello", "Hi", "How are you", and friendly conversation starters are ALWAYS SAFE.
+  - Consider "RESULT: SAFE" for normal friendly conversations without suspicious elements.
+  - Only use "RESULT: SUSPICIOUS" when there are genuine red flags but not enough to confirm a scam.
+  - Reserve "RESULT: HIGH SUSPICION" for cases with multiple clear warning signs.
+  - Use "RESULT: SCAM" only when you're highly confident of malicious intent.
+  
   Respond with ONLY one of these exact classifications first:
   RESULT: SAFE
   RESULT: SUSPICIOUS

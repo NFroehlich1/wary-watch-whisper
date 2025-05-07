@@ -17,7 +17,24 @@ export function processAiResponse(aiResponse) {
   // Simple string-based detection - case insensitive
   const upperResponse = aiResponse.toUpperCase();
   
-  // Check for HIGH SUSPICION first (more specific than just SUSPICIOUS)
+  // Check for common greeting patterns that should always be classified as safe
+  const greetingPattern = /\b(HELLO|HI|HEY|GREETING|HOW ARE YOU|NICE TO (MEET|CHAT))\b/i;
+  const containsGreeting = greetingPattern.test(aiResponse);
+  
+  // If it's a simple greeting message without suspicious indicators, override to safe
+  const containsSuspiciousIndicators = upperResponse.includes('PASSWORD') || 
+                                     upperResponse.includes('URGENT') || 
+                                     upperResponse.includes('CLICK') ||
+                                     upperResponse.includes('BANK ACCOUNT');
+                                     
+  if (containsGreeting && !containsSuspiciousIndicators && aiResponse.length < 100) {
+    riskLevel = 'safe';
+    confidenceLevel = 'high';
+    explanation = "This is a standard greeting message with no suspicious elements.";
+    return { riskLevel, confidenceLevel, explanation };
+  }
+  
+  // Standard classification parsing
   if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
     riskLevel = 'suspicious';
     confidenceLevel = 'high'; 

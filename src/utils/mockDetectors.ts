@@ -1,3 +1,4 @@
+
 import { ScamResult, Language } from '../types';
 import { detectTextLanguage } from './language';
 
@@ -12,28 +13,28 @@ export const mockUrlCheck = (url: string): ScamResult => {
                        (url.includes('win') && url.includes('now') && url.includes('money'));
   
   let riskLevel: 'scam' | 'suspicious' | 'safe' = 'safe';
-  let justification = "Diese URL scheint sicher zu sein, da sie HTTPS verwendet.";
+  let justification = "This URL appears to be safe as it uses HTTPS.";
   
   if (isScam) {
     riskLevel = 'scam';
-    justification = "Diese URL enthält bekannte Phishing-Muster und wurde als bösartig eingestuft.";
+    justification = "This URL contains known phishing patterns and has been classified as malicious.";
   } else if (isUsingHttp && isVerySuspicious) {
     // Only flag HTTP as suspicious if it also contains multiple suspicious elements
     riskLevel = 'suspicious';
-    justification = "Diese URL verwendet HTTP anstatt HTTPS und enthält verdächtige Schlüsselwörter. HTTP-Verbindungen sind nicht sicher und können abgefangen werden.";
+    justification = "This URL uses HTTP instead of HTTPS and contains suspicious keywords. HTTP connections are not secure and can be intercepted.";
   } else if (isVerySuspicious) {
     riskLevel = 'suspicious';
-    justification = "Diese URL enthält sehr verdächtige Schlüsselwörter, die häufig mit Phishing-Versuchen verbunden sind. Seien Sie äußerst vorsichtig.";
+    justification = "This URL contains highly suspicious keywords that are often associated with phishing attempts. Exercise extreme caution.";
   } else if (isSuspicious && isUsingHttp) {
     // Multiple indicators must be present
     riskLevel = 'suspicious';
-    justification = "Diese URL enthält verdächtige Schlüsselwörter und verwendet unsicheres HTTP. Bitte seien Sie vorsichtig.";
+    justification = "This URL contains suspicious keywords and uses insecure HTTP. Please proceed with caution.";
   }
   
   return {
     riskLevel,
     justification,
-    detectedLanguage: 'de',
+    detectedLanguage: 'en',
     originalContent: url,
     timestamp: new Date().toISOString(),
     confidenceLevel: isScam ? 'high' : isVerySuspicious ? 'high' : isSuspicious ? 'medium' : 'high'
@@ -43,6 +44,21 @@ export const mockUrlCheck = (url: string): ScamResult => {
 export const mockTextCheck = (text: string, language?: Language): ScamResult => {
   // Always use the detectTextLanguage function from utils to detect the language
   const detectedLanguage = detectTextLanguage(text);
+  
+  // Check for common greeting patterns that should always be considered safe
+  const isSimpleGreeting = /^(hello|hi|hey|good morning|good afternoon|good evening|how are you|nice to (meet|chat)|greetings)/i.test(text.toLowerCase());
+  
+  // If it's a simple greeting, return safe immediately without further checks
+  if (isSimpleGreeting) {
+    return {
+      riskLevel: 'safe',
+      justification: "This is a standard greeting message and appears to be safe.",
+      detectedLanguage,
+      originalContent: text,
+      timestamp: new Date().toISOString(),
+      confidenceLevel: 'high'
+    };
+  }
   
   // More strict criteria for flagging content - requiring combinations of suspicious elements
   const hasPasswordRequest = text.toLowerCase().includes('password') || 

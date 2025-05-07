@@ -120,10 +120,21 @@ const ChatDemo: React.FC = () => {
     let responseText = '';
     const randomResponse = Math.random();
     
+    // First message is always friendly greeting (not suspicious)
     if (messages.length === 0) {
       responseText = "Hello! How are you? Nice to chat with you here.";
+    } else if (messages.length === 1 || messages.length == 2) {
+      // Second and third messages should also be safe to establish normal conversation
+      const safeResponses = [
+        "I'm doing great today! How about you?",
+        "What have you been up to lately?",
+        "It's a beautiful day today, isn't it?",
+        "I've been meaning to catch up with you.",
+        "Did you watch anything interesting lately?"
+      ];
+      responseText = safeResponses[Math.floor(Math.random() * safeResponses.length)];
     } else if (randomResponse < 0.2) {
-      // 20% chance of sending a suspicious message
+      // 20% chance of sending a suspicious message after establishing normal conversation
       const suspiciousMessages = [
         "Hey, can you help me with something quickly? I urgently need your password for an important matter. It's very urgent!",
         "Click here to claim your prize: http://suspicious-fake-site.com/claim-prize?user=you",
@@ -132,7 +143,6 @@ const ChatDemo: React.FC = () => {
         "Hey, check out this great offer! You can earn $5000. Click here: http://get-rich-quick.net/offer"
       ];
       responseText = suspiciousMessages[Math.floor(Math.random() * suspiciousMessages.length)];
-      
     } else {
       // Normal responses
       const normalResponses = [
