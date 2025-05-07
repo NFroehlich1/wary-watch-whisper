@@ -14,6 +14,22 @@ import { RiskLevel } from "../types";
 export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
   const upperResponse = aiResponse.toUpperCase();
   
+  // Enhanced pattern for safe introductions/greetings
+  const introductionPattern = /\b(HELLO|HI|HEY|GREETING|WELCOME).+(ADVISOR|ASSISTANT|AI|HELP|TODAY)\b/i;
+  const isIntroduction = introductionPattern.test(upperResponse);
+  
+  // Additional check for common AI assistant introduction patterns
+  const assistantIntroPattern = /(I('M| AM) (YOUR|AN?) .*(ADVISOR|ASSISTANT|AI)|HOW CAN I HELP YOU)/i;
+  const isAssistantIntro = assistantIntroPattern.test(aiResponse);
+  
+  // If it's a standard introduction message without suspicious elements, mark as safe immediately
+  if ((isIntroduction || isAssistantIntro) && 
+      !upperResponse.includes('ACCOUNT NUMBER') && 
+      !upperResponse.includes('CREDIT CARD') &&
+      !upperResponse.includes('BANK DETAILS')) {
+    return 'safe';
+  }
+  
   // Check for common absolutely safe chat messages first - very specific patterns
   if (aiResponse.length < 150) {
     const simpleGreetings = /^(THANKS|THANK YOU|HELLO|HI|HEY|OK|YES|NO|SURE|COOL|GREAT|FINE)$/i;

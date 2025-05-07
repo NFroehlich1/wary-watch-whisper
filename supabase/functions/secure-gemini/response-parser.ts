@@ -17,6 +17,22 @@ export function processAiResponse(aiResponse) {
   // Simple string-based detection - case insensitive
   const upperResponse = aiResponse.toUpperCase();
   
+  // Enhanced pattern for safe introductions/greetings
+  const introductionPattern = /\b(HELLO|HI|HEY|GREETING|WELCOME).+(ADVISOR|ASSISTANT|AI|HELP|TODAY)\b/i;
+  const isIntroduction = introductionPattern.test(upperResponse);
+  
+  // Additional check for common AI assistant introduction patterns
+  const assistantIntroPattern = /(I('M| AM) (YOUR|AN?) .*(ADVISOR|ASSISTANT|AI)|HOW CAN I HELP YOU)/i;
+  const isAssistantIntro = assistantIntroPattern.test(aiResponse);
+  
+  // If it's a standard introduction message, mark as safe immediately
+  if ((isIntroduction || isAssistantIntro) && !containsSuspiciousPatterns(aiResponse)) {
+    riskLevel = 'safe';
+    confidenceLevel = 'high';
+    explanation = "This is a standard greeting or introduction message with no suspicious elements.";
+    return { riskLevel, confidenceLevel, explanation };
+  }
+  
   // Check for common greeting patterns that should always be classified as safe
   const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT|NICE TO (MEET|CHAT))\b/i;
   const containsCommonSafe = commonSafeMessages.test(aiResponse);
@@ -120,4 +136,23 @@ export function processAiResponse(aiResponse) {
   }
 
   return { riskLevel, confidenceLevel, explanation };
+}
+
+/**
+ * Helper function to check if a message contains suspicious patterns
+ * that would disqualify it from being considered safe despite matching introduction patterns
+ */
+function containsSuspiciousPatterns(message) {
+  const upperMessage = message.toUpperCase();
+  return (
+    upperMessage.includes('ACCOUNT NUMBER') ||
+    upperMessage.includes('CREDIT CARD') ||
+    upperMessage.includes('VERIFY') ||
+    upperMessage.includes('BANK DETAILS') ||
+    upperMessage.includes('PASSWORD') ||
+    upperMessage.includes('LOGIN') ||
+    upperMessage.includes('URGENT') ||
+    upperMessage.includes('LIMITED TIME') ||
+    upperMessage.includes('OFFER') && upperMessage.includes('EXPIRES')
+  );
 }
