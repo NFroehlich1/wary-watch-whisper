@@ -40,9 +40,9 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex cursor-pointer text-muted-foreground/70 hover:text-muted-foreground">
+            <div className="inline-flex cursor-pointer text-muted-foreground/70 hover:text-muted-foreground p-1.5 hover:bg-muted/30 rounded-full transition-colors">
               <Shield className="h-4 w-4" />
-            </span>
+            </div>
           </TooltipTrigger>
           <TooltipContent>
             <p>Noch keine Verifizierung</p>
@@ -93,6 +93,7 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
   
   // Handle click on verification icon
   const handleVerificationClick = () => {
+    console.log('Verification icon clicked, opening dialog for message:', messageId);
     setDialogOpen(true);
   };
   
@@ -101,12 +102,14 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span 
-              className={`inline-flex cursor-pointer hover:opacity-80 p-1 rounded-full ${getIconBackground()}`}
+            <div 
+              className={`z-10 inline-flex cursor-pointer hover:opacity-80 p-1.5 rounded-full ${getIconBackground()} transition-all duration-200 hover:scale-110`}
               onClick={handleVerificationClick}
+              role="button"
+              aria-label="Nachrichtenverifizierung anzeigen"
             >
               {getVerificationIcon()}
-            </span>
+            </div>
           </TooltipTrigger>
           <TooltipContent>
             <p>{getTooltipText()}</p>

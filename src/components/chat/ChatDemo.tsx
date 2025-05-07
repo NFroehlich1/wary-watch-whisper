@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +20,7 @@ interface Message {
 }
 
 const ChatDemo: React.FC = () => {
+  // ... keep existing code (message state, input handling, etc.)
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [scamAlerts, setScamAlerts] = useState<{id: string, content: string, result: ScamResult}[]>([]);
@@ -50,6 +50,16 @@ const ChatDemo: React.FC = () => {
       // First with local scan
       const myMessageResult = scanMessage(inputMessage);
       
+      // Add verification result to scamAlerts if detected
+      if (myMessageResult) {
+        console.log('Detected risk in own message:', myMessageResult.riskLevel);
+        setScamAlerts(prevAlerts => [...prevAlerts, {
+          id: newMessage.id,
+          content: inputMessage,
+          result: myMessageResult
+        }]);
+      }
+      
       // Then with AI scan if Gemini is enabled
       if (geminiOptions.enabled) {
         toast({
@@ -58,22 +68,15 @@ const ChatDemo: React.FC = () => {
           duration: 2000,
         });
         
-        detectScam(inputMessage, 'text').then(() => {
+        detectScam(inputMessage, 'text').then((aiResult) => {
           // AI analysis complete
+          console.log('AI verification result for message:', newMessage.id, aiResult);
           toast({
             title: "KI-Analyse abgeschlossen",
             description: "Ihre Nachricht wurde überprüft.",
             duration: 2000,
           });
         });
-      }
-      
-      if (myMessageResult) {
-        setScamAlerts(prevAlerts => [...prevAlerts, {
-          id: newMessage.id,
-          content: inputMessage,
-          result: myMessageResult
-        }]);
       }
       
       setInputMessage('');
@@ -126,6 +129,16 @@ const ChatDemo: React.FC = () => {
     // Auto-scan for suspicious content in friend's message using local scan
     const localResult = scanMessage(responseText);
     
+    // Add verification result if detected
+    if (localResult) {
+      console.log('Detected risk in friend message:', localResult.riskLevel);
+      setScamAlerts(prevAlerts => [...prevAlerts, {
+        id: newMessage.id,
+        content: responseText,
+        result: localResult
+      }]);
+    }
+    
     // Then with AI scan if Gemini is enabled
     if (geminiOptions.enabled) {
       toast({
@@ -143,14 +156,6 @@ const ChatDemo: React.FC = () => {
         });
       });
     }
-    
-    if (localResult) {
-      setScamAlerts(prevAlerts => [...prevAlerts, {
-        id: newMessage.id,
-        content: responseText,
-        result: localResult
-      }]);
-    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -166,7 +171,9 @@ const ChatDemo: React.FC = () => {
 
   // Helper function to get verification result for a message
   const getVerificationForMessage = (messageId: string) => {
-    return scamAlerts.find(alert => alert.id === messageId)?.result;
+    const result = scamAlerts.find(alert => alert.id === messageId)?.result;
+    console.log('Verification for message', messageId, result);
+    return result;
   };
 
   // Helper function to get message background color based on verification result
@@ -225,21 +232,25 @@ const ChatDemo: React.FC = () => {
               <div 
                 className={`max-w-[75%] px-4 py-2 rounded-lg ${getMessageBackground(message.id, message.sender === 'me')}`}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 relative">
                   {message.sender === 'friend' && (
-                    <MessageVerificationIcon 
-                      messageId={message.id}
-                      messageContent={message.text}
-                      result={getVerificationForMessage(message.id)}
-                    />
+                    <div className="flex-none">
+                      <MessageVerificationIcon 
+                        messageId={message.id}
+                        messageContent={message.text}
+                        result={getVerificationForMessage(message.id)}
+                      />
+                    </div>
                   )}
                   <div className="whitespace-pre-wrap break-words flex-1">{message.text}</div>
                   {message.sender === 'me' && (
-                    <MessageVerificationIcon 
-                      messageId={message.id}
-                      messageContent={message.text}
-                      result={getVerificationForMessage(message.id)}
-                    />
+                    <div className="flex-none">
+                      <MessageVerificationIcon 
+                        messageId={message.id}
+                        messageContent={message.text}
+                        result={getVerificationForMessage(message.id)}
+                      />
+                    </div>
                   )}
                 </div>
                 <div className={`text-[10px] mt-1 ${
