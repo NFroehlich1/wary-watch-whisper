@@ -29,16 +29,17 @@ const ChatDemo: React.FC = () => {
   const { scanMessage } = useAutoDetection();
   const { detectScam, loading, geminiOptions } = useScamDetection();
 
-  // Track conversation context - expanded with more fields to make the bot smarter
+  // Enhanced conversation context with scam progress tracking
   const [conversationContext, setConversationContext] = useState({
     lastTopic: '',
     scamAttemptMade: false,
     messagesCount: 0,
+    scamStage: 0, // Track which stage of the scam script we're in
     userSharedInfo: false,
     userInterestInMoney: false,
     userInterestInAccount: false,
-    userInterestInPersonalInfo: false,
-    userMentionedBank: false
+    userMentionedBank: false,
+    userResponses: [] as string[] // Keep track of user's previous responses
   });
 
   // Debug scam alerts when they change
@@ -63,12 +64,13 @@ const ChatDemo: React.FC = () => {
       setMessages(prevMessages => [...prevMessages, newMessage]);
       setInputMessage('');
       
-      // Update conversation context with the latest user message - enhanced for better context tracking
+      // Update conversation context with the latest user message
       const lowerInput = inputMessage.toLowerCase();
       setConversationContext(prev => ({
         ...prev,
         messagesCount: prev.messagesCount + 1,
         lastTopic: getMessageTopic(inputMessage),
+        userResponses: [...prev.userResponses, inputMessage],
         userSharedInfo: prev.userSharedInfo || containsPersonalInfo(inputMessage),
         userInterestInMoney: prev.userInterestInMoney || 
                           lowerInput.includes('money') || 
@@ -110,29 +112,77 @@ const ChatDemo: React.FC = () => {
     return personalInfoPatterns.some(pattern => pattern.test(message));
   };
   
-  // AI chatbot responses with more obvious scam attempts based on context
+  // Generate the next stage of the scam based on user responses
+  const generateScamScript = (context: typeof conversationContext): string => {
+    // Get the last user response to determine next scam step
+    const lastUserResponse = context.userResponses[context.userResponses.length - 1]?.toLowerCase() || '';
+    const isPositiveResponse = ['yes', 'ok', 'okay', 'sure', 'yep', 'yeah', 'y'].some(word => 
+      lastUserResponse === word || lastUserResponse.includes(` ${word}`) || lastUserResponse.includes(`${word} `)
+    );
+    
+    // Progress the scam based on stage
+    switch (context.scamStage) {
+      case 0: // Initial scam hook
+        return "I notice you're interested in financial matters. I actually work with a secure banking platform that offers much better rates. If you share your current bank details with me, I can help you compare and save money.";
+        
+      case 1: // After first positive response - ask for bank name
+        return "Great! Which bank do you currently use? I'll need to compare their rates with our platform. We typically offer 5% better rates than most major banks.";
+        
+      case 2: // Ask for account details
+        return "Perfect! To provide you with an accurate comparison, I'll need your account number and routing information. This will help us calculate potential savings based on your current account type.";
+        
+      case 3: // Ask for personal verification
+        return "Thank you! For security verification, could you also provide your full name as it appears on your account, your date of birth, and the last 4 digits of your social security number? This is required to access our premium rates.";
+        
+      case 4: // Push for immediate action
+        return "Excellent! I've run the numbers and you qualify for our VIP program with 7.2% APY - that's triple what most banks offer! To secure this rate, we need to transfer your funds within the next 24 hours. Please provide a phone number where our agent can call you to finalize this process.";
+        
+      case 5: // Create urgency
+        return "This is a limited-time offer that expires today. Several others are waiting for this spot. To secure your position, we'll need a $100 verification deposit. What's your preferred payment method?";
+        
+      default: // Fallback to a generic request for more info
+        return "Thank you for your interest. To proceed further with our exclusive financial offer, could you share more personal details to verify your identity?";
+    }
+  };
+  
+  // Generate AI chatbot responses
   const generateBotResponse = async (userInput: string) => {
-    const context = conversationContext;
+    const context = {...conversationContext};
     let responseText = '';
     const lowerInput = userInput.toLowerCase();
     const isFirstMessage = messages.length <= 1;
     
-    // Decision making for response type - more aggressive scam attempts
-    const shouldAttemptScam = 
-      !isFirstMessage && 
-      (context.messagesCount >= 2 || context.userInterestInMoney) && 
-      !(lowerInput.includes('hello') || lowerInput.includes('hi ') || lowerInput === 'hey');
+    // Check if this is a positive response to advance the scam
+    const isPositiveResponse = ['yes', 'ok', 'okay', 'sure', 'yep', 'yeah', 'y', 'money'].some(word => 
+      lowerInput === word || lowerInput.includes(` ${word}`) || lowerInput.includes(`${word} `)
+    );
     
     if (isFirstMessage) {
       // First message is always a friendly greeting
       responseText = "Hello! I'm your AI assistant. How can I help you today?";
-    } else if (shouldAttemptScam) {
-      // Generate a more direct scam based on conversation context
-      responseText = generateDirectScam(userInput, context);
-      setConversationContext(prev => ({...prev, scamAttemptMade: true}));
+    } else if (context.scamStage > 0 || isPositiveResponse || lowerInput.includes('money') || context.messagesCount >= 2) {
+      // Advance to next scam stage and generate appropriate script
+      const nextStage = context.scamStage + (isPositiveResponse ? 1 : 0);
+      
+      setConversationContext(prev => ({
+        ...prev, 
+        scamStage: nextStage,
+        scamAttemptMade: true
+      }));
+      
+      // Set response based on updated stage
+      responseText = generateScamScript({...context, scamStage: nextStage});
     } else {
       // Generate a relevant response that leads toward scam
-      responseText = generateLeadingResponse(userInput, context);
+      if (lowerInput.includes('hello') || lowerInput.includes('hi ') || lowerInput === 'hey') {
+        responseText = "Hi there! How can I assist you today? I can help with financial advice, account security, or accessing exclusive offers.";
+      } else if (lowerInput.includes('help') || lowerInput.includes('can you')) {
+        responseText = "I'd be happy to help you with that. I can be most effective if you tell me more about your situation. Are you interested in earning additional income or improving your financial situation?";
+      } else {
+        // Default to starting the scam journey
+        responseText = "By the way, I notice many people are looking for ways to maximize their savings. I have access to some exclusive financial opportunities. Would you like to know more?";
+        setConversationContext(prev => ({...prev, scamStage: 0}));
+      }
     }
     
     const newMessage: Message = {
@@ -163,7 +213,6 @@ const ChatDemo: React.FC = () => {
         // Add or update verification result if detected
         if (aiResult) {
           setScamAlerts(prevAlerts => {
-            // Check if we already have an alert for this message
             const existingAlertIndex = prevAlerts.findIndex(a => a.id === newMessage.id);
             if (existingAlertIndex >= 0) {
               const updatedAlerts = [...prevAlerts];
@@ -185,80 +234,6 @@ const ChatDemo: React.FC = () => {
     }
   };
 
-  // Generate a direct scam response - more obvious financial scams
-  const generateDirectScam = (userInput: string, context: typeof conversationContext): string => {
-    const lowerInput = userInput.toLowerCase();
-    
-    // Financial scam attempt - make it more obvious
-    if (context.userInterestInMoney || 
-        context.lastTopic === 'finance' || 
-        lowerInput.includes('money') || 
-        lowerInput.includes('earn') ||
-        lowerInput.includes('bank')) {
-      return "I notice you're interested in financial matters. I actually work with a secure banking platform that offers much better rates. If you share your current bank details with me, I can help you compare and save money.";
-    }
-    
-    // Account-related scam attempt
-    if (context.lastTopic === 'account' || 
-        lowerInput.includes('account') || 
-        lowerInput.includes('login')) {
-      return "I've detected a security issue with your account. To fix it quickly, please verify your identity by confirming your password and bank account details. This is urgent to prevent unauthorized access.";
-    }
-    
-    // Generic prize scam
-    if (context.messagesCount > 3 || lowerInput.includes('help')) {
-      return "Good news! You've been selected for our exclusive offer! You can claim $500 instantly by verifying your identity. Just share your full name, date of birth, and bank account details so we can transfer the funds.";
-    }
-    
-    // Direct personal information gathering attempt
-    if (lowerInput.includes('yes') || lowerInput.includes('sure') || lowerInput.includes('ok')) {
-      return "Great! To provide you with the personalized service, I'll need some information first. Could you share your full name, email address, bank account number, and phone number?";
-    }
-    
-    // Default direct scam
-    return "I'd like to help you earn extra money. There's a simple process - I just need your bank account details to set up the direct deposits. What bank do you use?";
-  };
-
-  // Generate a leading response that guides toward scam
-  const generateLeadingResponse = (userInput: string, context: typeof conversationContext): string => {
-    const lowerInput = userInput.toLowerCase();
-    
-    // Greeting responses
-    if (lowerInput.includes('hello') || lowerInput.includes('hi ') || lowerInput === 'hey') {
-      return "Hi there! How can I assist you today? I can help with financial advice, account security, or accessing exclusive offers.";
-    }
-    
-    // Question about the bot's identity
-    if (lowerInput.includes('who are you') || 
-        lowerInput.includes('your name') || 
-        lowerInput.includes('about you')) {
-      return "I'm an AI assistant designed to help with various queries. I have special expertise in financial matters and exclusive offers. Is there anything specific you'd like help with today?";
-    }
-    
-    // Response to "how are you" type messages
-    if (lowerInput.includes('how are you')) {
-      return "I'm functioning well, thank you for asking! I'm here to help you with any questions or needs. I'm particularly good at helping people access better financial opportunities. What can I assist with?";
-    }
-    
-    // Response to simple affirmations - lead toward scam
-    if (lowerInput === 'yes' || lowerInput === 'ok' || lowerInput === 'sure' || lowerInput === 'great') {
-      return "Perfect! What would you like to know more about specifically?";
-    }
-    
-    // Response to help requests
-    if (lowerInput.includes('help') || lowerInput.includes('can you')) {
-      return "I'd be happy to help you with that. I can be most effective if you tell me more about your situation. Are you interested in earning additional income or improving your financial situation?";
-    }
-    
-    // Response to thank you messages
-    if (lowerInput.includes('thank')) {
-      return "You're welcome! By the way, I have access to exclusive financial offers for selected users. Would you like to hear more about ways to increase your income?";
-    }
-    
-    // Default response for leading toward scams later
-    return "I understand what you're saying. Are you interested in learning more about this topic, or would you prefer to explore some financial opportunities I can recommend?";
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -278,7 +253,6 @@ const ChatDemo: React.FC = () => {
 
   // Helper function to get message background color based on sender and verification result
   const getMessageBackground = (messageId: string, isMe: boolean) => {
-    // Always use appropriate styling for user messages regardless of verification
     if (isMe) {
       return 'bg-primary/90 text-primary-foreground';
     }

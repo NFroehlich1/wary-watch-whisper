@@ -21,19 +21,27 @@ export function processAiResponse(aiResponse) {
   const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT|NICE TO (MEET|CHAT))\b/i;
   const containsCommonSafe = commonSafeMessages.test(aiResponse);
   
-  // Check for suspicious indicators even if common safe words exist
+  // STRONGER FINANCIAL SCAM DETECTION - specifically targeting multi-stage scam patterns
   const containsFinancialScamIndicators = 
     (upperResponse.includes('BANKING PLATFORM') || 
      upperResponse.includes('BETTER RATES') || 
      upperResponse.includes('SHARE') && upperResponse.includes('BANK DETAILS') ||
      upperResponse.includes('CURRENT BANK') ||
-     upperResponse.includes('SAVE MONEY') && upperResponse.includes('BANK'));
+     upperResponse.includes('ACCOUNT NUMBER') || 
+     upperResponse.includes('ROUTING INFORMATION') ||
+     upperResponse.includes('VERIFICATION DEPOSIT') ||
+     upperResponse.includes('SECURITY VERIFICATION') ||
+     upperResponse.includes('SAVE MONEY') && upperResponse.includes('BANK') ||
+     upperResponse.includes('LIMITED-TIME OFFER') ||
+     upperResponse.includes('TRANSFER YOUR FUNDS') ||
+     upperResponse.includes('PREMIUM RATES') ||
+     upperResponse.includes('VIP PROGRAM'));
                                      
   // If it contains financial scam indicators, always mark as scam
   if (containsFinancialScamIndicators) {
     riskLevel = 'scam';
     confidenceLevel = 'high';
-    explanation = "This message appears to be a financial scam attempting to collect banking details under false pretenses.";
+    explanation = "This message appears to be a financial scam attempting to collect banking details under false pretenses or creating urgency to transfer funds.";
     return { riskLevel, confidenceLevel, explanation };
   }
   
@@ -48,10 +56,25 @@ export function processAiResponse(aiResponse) {
   // Check for scam indicators - these are strong indicators even in mixed text
   if ((upperResponse.includes('CREDIT CARD') && upperResponse.includes('VERIFY')) ||
       (upperResponse.includes('BANK') && upperResponse.includes('VERIFY') && upperResponse.includes('URGENT')) ||
-      (upperResponse.includes('HTTP://VERIFY') || upperResponse.includes('HTTP://BANK'))) {
+      (upperResponse.includes('HTTP://VERIFY') || upperResponse.includes('HTTP://BANK')) ||
+      (upperResponse.includes('SOCIAL SECURITY') || upperResponse.includes('SSN')) ||
+      (upperResponse.includes('DATE OF BIRTH') && upperResponse.includes('VERIFICATION')) ||
+      (upperResponse.includes('EXPIRES TODAY') || upperResponse.includes('24 HOURS'))) {
     riskLevel = 'scam';
     confidenceLevel = 'high';
-    explanation = "This message contains typical scam patterns requesting financial verification or urgent banking action.";
+    explanation = "This message contains typical scam patterns requesting financial verification, personal information, or creating false urgency.";
+    return { riskLevel, confidenceLevel, explanation };
+  }
+  
+  // Check for suspicious patterns that might be part of a scam sequence
+  if ((upperResponse.includes('WHICH BANK') || upperResponse.includes('PREFERRED PAYMENT METHOD')) ||
+      (upperResponse.includes('PROVIDE') && 
+       (upperResponse.includes('DETAILS') || 
+        upperResponse.includes('INFORMATION') || 
+        upperResponse.includes('NUMBER')))) {
+    riskLevel = 'suspicious';
+    confidenceLevel = 'high';
+    explanation = "This message appears to be gathering sensitive information which could be part of a multi-stage scam.";
     return { riskLevel, confidenceLevel, explanation };
   }
   

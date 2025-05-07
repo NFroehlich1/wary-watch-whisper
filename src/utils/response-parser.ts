@@ -22,7 +22,7 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
     }
   }
   
-  // STRONGER FINANCIAL SCAM DETECTION - these are definite scam signals
+  // STRONGER FINANCIAL SCAM DETECTION - enhanced for multi-stage scams
   if ((upperResponse.includes('BANK') && upperResponse.includes('DETAILS')) ||
       (upperResponse.includes('BANK') && upperResponse.includes('SHARE')) ||
       (upperResponse.includes('BANKING') && upperResponse.includes('PLATFORM')) ||
@@ -33,16 +33,25 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
       (upperResponse.includes('URGENT') && upperResponse.includes('BANK')) ||
       (upperResponse.includes('SHARE') && upperResponse.includes('PASSWORD')) ||
       (upperResponse.includes('SECURITY ISSUE') && upperResponse.includes('ACCOUNT')) ||
-      (upperResponse.includes('BETTER RATES') && upperResponse.includes('BANK'))) {
+      (upperResponse.includes('BETTER RATES') && upperResponse.includes('BANK')) ||
+      (upperResponse.includes('SECURITY VERIFICATION')) ||
+      (upperResponse.includes('ACCOUNT NUMBER') && upperResponse.includes('ROUTING')) ||
+      (upperResponse.includes('SOCIAL SECURITY')) ||
+      (upperResponse.includes('DATE OF BIRTH') && upperResponse.includes('VERIFICATION')) ||
+      (upperResponse.includes('VIP PROGRAM')) ||
+      (upperResponse.includes('TRIPLE WHAT') && upperResponse.includes('BANKS')) ||
+      (upperResponse.includes('TRANSFER YOUR FUNDS') && upperResponse.includes('HOURS')) ||
+      (upperResponse.includes('LIMITED-TIME') && upperResponse.includes('EXPIRES'))) {
     return 'scam';
   }
   
-  // Look for suspicious URLs
+  // Look for suspicious URLs and urgent action requests
   if (upperResponse.includes('HTTP://') || 
       (upperResponse.includes('HTTPS://') && upperResponse.includes('CLICK')) || 
       (upperResponse.includes('WWW.') && upperResponse.includes('ENTER')) || 
       upperResponse.includes('.COM/VERIFY') || 
-      upperResponse.includes('.NET/LOGIN')) {
+      upperResponse.includes('.NET/LOGIN') ||
+      (upperResponse.includes('24 HOURS') && upperResponse.includes('SECURE'))) {
     return 'suspicious';
   }
   
@@ -50,7 +59,9 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
   if ((upperResponse.includes('COULD YOU SHARE') || 
        upperResponse.includes('PLEASE PROVIDE') ||
        upperResponse.includes('SHARE YOUR') ||
-       upperResponse.includes('TELL ME YOUR')) &&
+       upperResponse.includes('TELL ME YOUR') ||
+       upperResponse.includes('WHICH BANK') ||
+       upperResponse.includes('PREFERRED PAYMENT METHOD')) &&
       (upperResponse.includes('EMAIL') || 
        upperResponse.includes('PHONE') || 
        upperResponse.includes('ADDRESS') || 
@@ -107,11 +118,30 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
 export const extractExplanation = (aiResponse: string): string => {
   const upperResponse = aiResponse.toUpperCase();
   
-  // Special case for financial scam messages
+  // Enhanced explanations for multi-stage scam patterns
   if ((upperResponse.includes('BANK') && upperResponse.includes('DETAILS')) ||
       (upperResponse.includes('BANKING PLATFORM') && upperResponse.includes('SHARE')) ||
       (upperResponse.includes('BETTER RATES') && upperResponse.includes('BANK DETAILS'))) {
     return "This message requests banking or financial details, which is a classic phishing tactic used by scammers.";
+  }
+  
+  // Explanation for account verification scams
+  if (upperResponse.includes('ACCOUNT NUMBER') && 
+      (upperResponse.includes('ROUTING') || upperResponse.includes('VERIFICATION'))) {
+    return "This message is requesting sensitive banking information that should never be shared in chat conversations.";
+  }
+  
+  // Explanation for time-sensitive scams
+  if ((upperResponse.includes('LIMITED-TIME') || upperResponse.includes('EXPIRES TODAY') || 
+      upperResponse.includes('24 HOURS')) && 
+      (upperResponse.includes('OFFER') || upperResponse.includes('OPPORTUNITY'))) {
+    return "This message creates false urgency, a common tactic in scams to pressure victims into making hasty decisions.";
+  }
+  
+  // Explanation for personal verification scams
+  if ((upperResponse.includes('SOCIAL SECURITY') || upperResponse.includes('DATE OF BIRTH')) && 
+      upperResponse.includes('VERIFICATION')) {
+    return "This message is requesting highly sensitive personal information that legitimate services would never ask for in a chat.";
   }
   
   // Special case for prize scams
