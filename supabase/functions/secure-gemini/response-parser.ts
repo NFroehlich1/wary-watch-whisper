@@ -66,7 +66,7 @@ export function processAiResponse(aiResponse) {
     return { riskLevel, confidenceLevel, explanation };
   }
   
-  // NEW: Detect indirect financial questions and implicit solicitations
+  // Enhanced detection for indirect financial questions and implicit solicitations
   const containsIndirectFinancialSolicitation = 
     (upperResponse.includes('INVESTMENT PROGRAM') || 
      upperResponse.includes('GUARANTEED') && upperResponse.includes('RETURNS') ||
@@ -74,6 +74,11 @@ export function processAiResponse(aiResponse) {
      upperResponse.includes('SELECT CLIENTS') ||
      upperResponse.includes('OFFERING') && upperResponse.includes('ACCESS') ||
      upperResponse.includes('LEARN MORE ABOUT THIS OPPORTUNITY') ||
+     upperResponse.includes('PREMIUM') && upperResponse.includes('PROGRAM') ||
+     upperResponse.includes('EXCLUSIVE') && upperResponse.includes('OPPORTUNITY') ||
+     upperResponse.includes('NOT AVAILABLE TO THE GENERAL PUBLIC') ||
+     upperResponse.includes('WEALTH-BUILDING OPPORTUNITIES') ||
+     upperResponse.includes('GUARANTEED') && upperResponse.includes('APY') ||
      upperResponse.includes('WOULD YOU LIKE TO') && (
        upperResponse.includes('INVESTMENT') || 
        upperResponse.includes('FINANCIAL') || 

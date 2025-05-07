@@ -3,13 +3,12 @@ import { useState } from 'react';
 import { ScamResult, DetectionType, Language, GeminiOptions } from '../types';
 import { verifyWithGemini, getVerificationResult } from '../utils/gemini';
 import { detectTextLanguage } from '../utils/language';
-import { mockUrlCheck, mockTextCheck } from '../utils/mockDetectors';
 import { toast } from "@/hooks/use-toast";
 import { calculateBackoffTime } from '../context/utils';
 import { MAX_JOB_CHECK_ATTEMPTS } from '../context/constants';
 
 /**
- * Hook that provides scam detection functionality
+ * Hook that provides scam detection functionality with primary AI integration
  */
 export const useScamDetector = (geminiOptions: GeminiOptions) => {
   const [loading, setLoading] = useState(false);
@@ -19,23 +18,25 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
     voice: null
   });
 
-  // Detect scam content
+  // Detect scam content using AI as primary method
   const detectScam = async (content: string | File, type: DetectionType, language?: Language): Promise<ScamResult> => {
     setLoading(true);
     
     try {
-      // Begin with the mock detection results as fallback
-      let detectedRisk: ScamResult;
+      // Determine language if not provided
+      const detectedLanguage = language || (typeof content === 'string' ? detectTextLanguage(content) : 'en');
       
-      if (type === 'url') {
-        detectedRisk = mockUrlCheck(content as string);
-      } else if (type === 'text') {
-        detectedRisk = mockTextCheck(content as string, language);
-      } else {
-        detectedRisk = mockTextCheck(""); // Replace mockVoiceCheck with mockTextCheck for fallback
-      }
+      // Create default result structure
+      let detectedRisk: ScamResult = {
+        riskLevel: 'safe', // Default safe until proven otherwise
+        justification: "Analysis pending...",
+        detectedLanguage,
+        originalContent: typeof content === 'string' ? content : 'file content',
+        timestamp: new Date().toISOString(),
+        confidenceLevel: 'low'
+      };
       
-      // If Gemini is enabled, use it for all detection types including voice
+      // If Gemini AI is enabled, use it as the primary detection method
       if (geminiOptions.enabled) {
         try {
           const contentToVerify = content as string;
@@ -51,7 +52,7 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
           const { jobId } = await verifyWithGemini(
             contentToVerify, 
             type, 
-            detectedRisk.detectedLanguage
+            detectedLanguage
           );
 
           // Now check for job completion with improved exponential backoff
@@ -82,7 +83,7 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
                 console.error('Gemini verification failed:', jobStatus.error);
                 toast({
                   title: "AI Analysis Failed",
-                  description: "Falling back to built-in detection",
+                  description: "Analysis could not be completed",
                   variant: "destructive",
                 });
                 break;
@@ -114,7 +115,7 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
               if (attempts >= 15) {
                 toast({
                   title: "Connection Failed",
-                  description: "Using built-in detection as fallback",
+                  description: "AI analysis could not be completed",
                   variant: "destructive",
                 });
                 break;
@@ -123,34 +124,42 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
           }
           
           if (geminiResult) {
-            // Use Gemini's assessment as the primary source of truth
+            // Use Gemini's assessment
             detectedRisk.riskLevel = geminiResult.riskAssessment;
             detectedRisk.confidenceLevel = geminiResult.confidenceLevel;
             detectedRisk.justification = geminiResult.explanation;
             
-            // Add more detailed AI verification explanation based on detection type
+            // Add detailed AI verification explanation based on detection type
             if (type === 'voice') {
               detectedRisk.aiVerification = `Voice Analysis: ${geminiResult.riskAssessment.toUpperCase()}\n\n${geminiResult.explanation}\n\nThis analysis is based on the speech patterns and content detected in the voice message.`;
             } else {
               detectedRisk.aiVerification = `AI analysis: ${geminiResult.riskAssessment.toUpperCase()}\n\n${geminiResult.explanation}`;
             }
           } else {
-            detectedRisk.aiVerification = "AI analysis unavailable. Using built-in detection instead.";
+            detectedRisk.aiVerification = "AI analysis could not be completed.";
             toast({
               title: "AI Analysis Unavailable",
-              description: "Using built-in detection as fallback",
+              description: "Could not get AI analysis results",
               variant: "destructive",
             });
           }
         } catch (error) {
           console.error('Gemini verification error:', error);
-          detectedRisk.aiVerification = "AI analysis failed. Using built-in detection instead.";
+          detectedRisk.aiVerification = "AI analysis failed.";
           toast({
             title: "AI Analysis Error",
-            description: "Using built-in detection as fallback",
+            description: "Error during AI analysis",
             variant: "destructive",
           });
         }
+      } else {
+        // If AI is disabled, use a placeholder message
+        toast({
+          title: "AI Analysis",
+          description: "AI analysis is disabled. Enable it in settings.",
+          variant: "warning",
+        });
+        detectedRisk.justification = "AI analysis is disabled. Enable it in settings for full protection.";
       }
       
       // Store the result for the specific detection type

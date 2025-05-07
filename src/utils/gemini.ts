@@ -14,3 +14,6 @@ export { extractRiskAssessment, extractExplanation, extractConfidenceLevel };
 
 // Export types
 export type { VerificationResult, JobStatus } from './gemini-client';
+
+// Export direct question functionality
+export { askAnalysisQuestion } from './askAnalysisQuestion';

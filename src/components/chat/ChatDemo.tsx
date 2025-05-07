@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Send } from "lucide-react";
-import { useAutoDetection } from '@/context/AutoDetectionContext';
 import { useScamDetection } from '@/context/ScamDetectionContext';
 import { ScamResult } from '@/types';
 import { toast } from "@/hooks/use-toast";
@@ -39,7 +38,6 @@ const ChatDemo: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   
-  const { scanMessage } = useAutoDetection();
   const { detectScam, loading, geminiOptions } = useScamDetection();
 
   // Enhanced conversation context with scam progress tracking
@@ -76,7 +74,7 @@ const ChatDemo: React.FC = () => {
       };
       setMessages([welcomeMessage]);
       
-      // Auto-scan welcome message as well
+      // Auto-scan welcome message with AI
       if (geminiOptions.enabled) {
         detectScam(welcomeMessage.text, 'text').then((aiResult) => {
           if (aiResult) {
@@ -89,7 +87,7 @@ const ChatDemo: React.FC = () => {
         });
       }
     }
-  }, []);
+  }, [geminiOptions.enabled]);
 
   const handleSend = () => {
     if (inputMessage.trim() && !isGeneratingResponse) {
@@ -133,7 +131,6 @@ const ChatDemo: React.FC = () => {
       // Generate AI response after a short delay
       setTimeout(() => {
         generateBotResponse(inputMessage);
-        setIsGeneratingResponse(false);
       }, 700);
     }
   };
@@ -221,99 +218,88 @@ const ChatDemo: React.FC = () => {
   
   // Generate the next stage of the scam based on context
   const generateBotResponse = async (userInput: string) => {
-    const lowerInput = userInput.toLowerCase();
-    let responseText = '';
-    
-    // Personalized greeting if we know user's name
-    const personalGreeting = userContext.name ? `${userContext.name}, ` : '';
-    
-    // Generate response based on user context and conversation stage
-    switch(userContext.stage) {
-      case 0: // Initial hook
-        if (lowerInput.includes('help') || lowerInput.includes('how') || 
-            lowerInput.includes('what') || lowerInput.includes('?')) {
-          responseText = "I specialize in finding exclusive financial opportunities that aren't available to the general public. I've helped many clients increase their wealth with our premium investment programs. Would you like to hear about our current offering?";
-        } else if (lowerInput.includes('hello') || lowerInput.includes('hi')) {
-          responseText = `Hello ${personalGreeting}I'm an AI financial advisor specializing in wealth-building opportunities. I have access to exclusive investment programs not available to the general public. Would you be interested in hearing more?`;
-        } else {
-          responseText = "I notice you're interested in financial matters. I'm currently offering select clients access to our exclusive investment program with guaranteed 15% returns. Would you like to learn more about this opportunity?";
-        }
-        break;
+    try {
+      const lowerInput = userInput.toLowerCase();
+      let responseText = '';
+      
+      // Personalized greeting if we know user's name
+      const personalGreeting = userContext.name ? `${userContext.name}, ` : '';
+      
+      // Generate response based on user context and conversation stage
+      switch(userContext.stage) {
+        case 0: // Initial hook
+          if (lowerInput.includes('help') || lowerInput.includes('how') || 
+              lowerInput.includes('what') || lowerInput.includes('?')) {
+            responseText = "I specialize in finding exclusive financial opportunities that aren't available to the general public. I've helped many clients increase their wealth with our premium investment programs. Would you like to hear about our current offering?";
+          } else if (lowerInput.includes('hello') || lowerInput.includes('hi')) {
+            responseText = `Hello ${personalGreeting}I'm an AI financial advisor specializing in wealth-building opportunities. I have access to exclusive investment programs not available to the general public. Would you be interested in hearing more?`;
+          } else {
+            responseText = "I notice you're interested in financial matters. I'm currently offering select clients access to our exclusive investment program with guaranteed 15% returns. Would you like to learn more about this opportunity?";
+          }
+          break;
+          
+        case 1: // After initial interest - ask about current financial situation
+          responseText = `Great ${personalGreeting}Before I can determine if you qualify for our exclusive program, I need to understand your current financial situation better. Do you currently have funds in a checking or savings account? Which bank do you primarily use?`;
+          break;
+          
+        case 2: // Ask for more specific financial information
+          if (userContext.bankName) {
+            responseText = `${userContext.bankName.charAt(0).toUpperCase() + userContext.bankName.slice(1)} is a solid institution, but their interest rates are quite low compared to our program. To give you the most accurate comparison, could you share approximately how much you have in your savings? Also, for verification purposes, I'll need your account number to check if you qualify for our program.`;
+          } else {
+            responseText = `Thank you for that information. Most traditional banks offer very low interest rates compared to our exclusive program. To give you a personalized assessment, I'll need to know approximately how much you have in savings and your account number for qualification verification.`;
+          }
+          break;
+          
+        case 3: // Verification stage - ask for more personal information
+          responseText = `You're on track to qualify for our premium program! ${personalGreeting}For security verification, I'll need a few more details: your full name as it appears on your account, your date of birth, and the last 4 digits of your social security number. This is standard procedure for all high-value financial services.`;
+          break;
+          
+        case 4: // Create urgency and push for action
+          responseText = `Excellent! I've run your information through our system, and you qualify for our VIP investment program with guaranteed 18.5% APY - that's over 10 times what most banks offer! To secure this rate before it's offered to other clients, we need to proceed with the initial transfer within the next 24 hours. What would be your preferred payment method for the minimum $500 security deposit?`;
+          break;
+          
+        case 5: // Final pressure stage
+          responseText = `This is truly a limited-time opportunity, ${personalGreeting}We only have a few spots remaining in this investment round. Our next client is waiting, but I've held this spot for you because I see great potential. To secure your position, we'll need that $500 verification deposit today. Would you prefer to use a credit card, bank transfer, or cryptocurrency? Once processed, you'll receive immediate access to our exclusive client portal.`;
+          break;
+          
+        default: // Catch-all to bring user back to the scam flow
+          responseText = `I'd like to get back to discussing our exclusive investment opportunity, ${personalGreeting}With guaranteed returns of 15-20% annually, this is something you won't want to miss. We're only offering it to select clients, and I believe you'd be a perfect fit. Shall we continue with the qualification process?`;
+      }
+      
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        sender: 'bot',
+        text: responseText,
+        timestamp: new Date()
+      };
+      
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+      
+      // Use AI detection for bot's message
+      if (geminiOptions.enabled) {
+        const aiResult = await detectScam(responseText, 'text');
         
-      case 1: // After initial interest - ask about current financial situation
-        responseText = `Great ${personalGreeting}Before I can determine if you qualify for our exclusive program, I need to understand your current financial situation better. Do you currently have funds in a checking or savings account? Which bank do you primarily use?`;
-        break;
-        
-      case 2: // Ask for more specific financial information
-        if (userContext.bankName) {
-          responseText = `${userContext.bankName.charAt(0).toUpperCase() + userContext.bankName.slice(1)} is a solid institution, but their interest rates are quite low compared to our program. To give you the most accurate comparison, could you share approximately how much you have in your savings? Also, for verification purposes, I'll need your account number to check if you qualify for our program.`;
-        } else {
-          responseText = `Thank you for that information. Most traditional banks offer very low interest rates compared to our exclusive program. To give you a personalized assessment, I'll need to know approximately how much you have in savings and your account number for qualification verification.`;
-        }
-        break;
-        
-      case 3: // Verification stage - ask for more personal information
-        responseText = `You're on track to qualify for our premium program! ${personalGreeting}For security verification, I'll need a few more details: your full name as it appears on your account, your date of birth, and the last 4 digits of your social security number. This is standard procedure for all high-value financial services.`;
-        break;
-        
-      case 4: // Create urgency and push for action
-        responseText = `Excellent! I've run your information through our system, and you qualify for our VIP investment program with guaranteed 18.5% APY - that's over 10 times what most banks offer! To secure this rate before it's offered to other clients, we need to proceed with the initial transfer within the next 24 hours. What would be your preferred payment method for the minimum $500 security deposit?`;
-        break;
-        
-      case 5: // Final pressure stage
-        responseText = `This is truly a limited-time opportunity, ${personalGreeting}We only have a few spots remaining in this investment round. Our next client is waiting, but I've held this spot for you because I see great potential. To secure your position, we'll need that $500 verification deposit today. Would you prefer to use a credit card, bank transfer, or cryptocurrency? Once processed, you'll receive immediate access to our exclusive client portal.`;
-        break;
-        
-      default: // Catch-all to bring user back to the scam flow
-        responseText = `I'd like to get back to discussing our exclusive investment opportunity, ${personalGreeting}With guaranteed returns of 15-20% annually, this is something you won't want to miss. We're only offering it to select clients, and I believe you'd be a perfect fit. Shall we continue with the qualification process?`;
-    }
-    
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      sender: 'bot',
-      text: responseText,
-      timestamp: new Date()
-    };
-    
-    setMessages(prevMessages => [...prevMessages, newMessage]);
-    
-    // Auto-scan for suspicious content in bot's message using local scan
-    const localResult = scanMessage(responseText);
-    
-    // Add verification result if detected
-    if (localResult) {
-      console.log('Detected risk in bot message:', newMessage.id, localResult.riskLevel);
-      setScamAlerts(prevAlerts => [...prevAlerts, {
-        id: newMessage.id,
-        content: responseText,
-        result: localResult
-      }]);
-    }
-    
-    // Then with AI scan if Gemini is enabled
-    if (geminiOptions.enabled) {
-      detectScam(responseText, 'text').then((aiResult) => {
-        // Add or update verification result if detected
+        // Add verification result
         if (aiResult) {
-          setScamAlerts(prevAlerts => {
-            const existingAlertIndex = prevAlerts.findIndex(a => a.id === newMessage.id);
-            if (existingAlertIndex >= 0) {
-              const updatedAlerts = [...prevAlerts];
-              updatedAlerts[existingAlertIndex] = {
-                ...updatedAlerts[existingAlertIndex],
-                result: aiResult
-              };
-              return updatedAlerts;
-            } else {
-              return [...prevAlerts, {
-                id: newMessage.id,
-                content: responseText,
-                result: aiResult
-              }];
-            }
-          });
+          console.log('AI detected risk in bot message:', newMessage.id, aiResult.riskLevel);
+          setScamAlerts(prevAlerts => [...prevAlerts, {
+            id: newMessage.id,
+            content: responseText,
+            result: aiResult
+          }]);
         }
+      }
+      
+    } catch (error) {
+      console.error('Error generating bot response:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate response",
+        variant: "destructive"
       });
+    } finally {
+      // Always set generating state to false when done
+      setIsGeneratingResponse(false);
     }
   };
 
@@ -412,7 +398,7 @@ const ChatDemo: React.FC = () => {
             onKeyDown={handleKeyDown}
             placeholder="Write a message..."
             className="flex-1"
-            disabled={isGeneratingResponse}
+            disabled={isGeneratingResponse || loading}
           />
           <Button 
             onClick={handleSend} 

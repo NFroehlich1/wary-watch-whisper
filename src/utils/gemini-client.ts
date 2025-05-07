@@ -6,6 +6,7 @@
 import { Language, RiskLevel } from "../types";
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { extractRiskAssessment, extractExplanation, extractConfidenceLevel } from './response-parser';
 
 // Type definitions for verification results
 export interface VerificationResult {
@@ -88,7 +89,7 @@ export const verifyWithGemini = async (content: string, detectionType: 'url' | '
     console.error('Error verifying with secure Gemini function:', error);
     toast({
       title: "Verification Error",
-      description: "Failed to start AI verification. Using built-in detection instead.",
+      description: "Failed to start AI verification.",
       variant: "destructive"
     });
     throw new Error(`Failed to start verification job: ${error instanceof Error ? error.message : String(error)}`);
