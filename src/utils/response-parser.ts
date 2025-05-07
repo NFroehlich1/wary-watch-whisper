@@ -14,9 +14,18 @@ import { RiskLevel } from "../types";
 export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
   const upperResponse = aiResponse.toUpperCase();
   
+  // Check for scam indicators - these are strong indicators even in mixed text
+  if ((upperResponse.includes('CREDIT CARD') && upperResponse.includes('VERIFY')) ||
+      (upperResponse.includes('BANK') && upperResponse.includes('VERIFY') && upperResponse.includes('URGENT')) ||
+      (upperResponse.includes('HTTP://VERIFY') || upperResponse.includes('HTTP://BANK'))) {
+    return 'scam';
+  }
+  
   // Check for common safe messages first
   const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT)\b/i;
-  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150) {
+  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150 && 
+      !upperResponse.includes('PASSWORD') && !upperResponse.includes('URGENT') && 
+      !upperResponse.includes('BANK') && !upperResponse.includes('VERIFY')) {
     return 'safe';
   }
   
@@ -41,9 +50,20 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
  * @returns Der Erklärungstext zur Risikobewertung
  */
 export const extractExplanation = (aiResponse: string): string => {
+  const upperResponse = aiResponse.toUpperCase();
+  
+  // Special case for scam messages with specific patterns
+  if ((upperResponse.includes('CREDIT CARD') && upperResponse.includes('VERIFY')) ||
+      (upperResponse.includes('BANK') && upperResponse.includes('VERIFY') && upperResponse.includes('URGENT')) ||
+      (upperResponse.includes('HTTP://VERIFY') || upperResponse.includes('HTTP://BANK'))) {
+    return "This message contains typical phishing patterns requesting financial information or urgent banking action.";
+  }
+  
   // Check for common safe messages first to give a direct explanation
   const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT)\b/i;
-  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150) {
+  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150 && 
+      !upperResponse.includes('PASSWORD') && !upperResponse.includes('URGENT') && 
+      !upperResponse.includes('BANK') && !upperResponse.includes('VERIFY')) {
     return "This is a standard chat message with no suspicious elements.";
   }
   
@@ -68,9 +88,18 @@ export const extractExplanation = (aiResponse: string): string => {
 export const extractConfidenceLevel = (aiResponse: string): 'high' | 'medium' | 'low' => {
   const upperResponse = aiResponse.toUpperCase();
   
+  // Special case for scam messages with specific patterns
+  if ((upperResponse.includes('CREDIT CARD') && upperResponse.includes('VERIFY')) ||
+      (upperResponse.includes('BANK') && upperResponse.includes('VERIFY') && upperResponse.includes('URGENT')) ||
+      (upperResponse.includes('HTTP://VERIFY') || upperResponse.includes('HTTP://BANK'))) {
+    return 'high';
+  }
+  
   // Check for common safe messages first to give high confidence
   const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT)\b/i;
-  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150) {
+  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150 && 
+      !upperResponse.includes('PASSWORD') && !upperResponse.includes('URGENT') && 
+      !upperResponse.includes('BANK') && !upperResponse.includes('VERIFY')) {
     return 'high';
   }
   

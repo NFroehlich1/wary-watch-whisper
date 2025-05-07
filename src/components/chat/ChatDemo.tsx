@@ -50,64 +50,6 @@ const ChatDemo: React.FC = () => {
       };
       
       setMessages(prevMessages => [...prevMessages, newMessage]);
-      
-      // Check if my own message contains suspicious content
-      // First with local scan
-      const myMessageResult = scanMessage(inputMessage);
-      
-      // Add verification result to scamAlerts if detected
-      if (myMessageResult) {
-        console.log('Detected risk in own message:', newMessage.id, myMessageResult.riskLevel);
-        setScamAlerts(prevAlerts => [...prevAlerts, {
-          id: newMessage.id,
-          content: inputMessage,
-          result: myMessageResult
-        }]);
-      }
-      
-      // Then with AI scan if Gemini is enabled
-      if (geminiOptions.enabled) {
-        toast({
-          title: "AI Analysis Running",
-          description: "Your message is being checked for suspicious content...",
-          duration: 2000,
-        });
-        
-        // FIX: Don't check the return value of detectScam (which is void)
-        // Instead, use a .then() pattern to handle the result
-        detectScam(inputMessage, 'text').then((aiResult) => {
-          // AI analysis complete
-          console.log('AI verification result for message:', newMessage.id, aiResult);
-          
-          if (aiResult) {
-            setScamAlerts(prevAlerts => {
-              // Update existing alert or add new one
-              const existingAlertIndex = prevAlerts.findIndex(a => a.id === newMessage.id);
-              if (existingAlertIndex >= 0) {
-                const updatedAlerts = [...prevAlerts];
-                updatedAlerts[existingAlertIndex] = {
-                  ...updatedAlerts[existingAlertIndex],
-                  result: aiResult
-                };
-                return updatedAlerts;
-              } else {
-                return [...prevAlerts, {
-                  id: newMessage.id,
-                  content: inputMessage,
-                  result: aiResult
-                }];
-              }
-            });
-          }
-          
-          toast({
-            title: "AI Analysis Complete",
-            description: "Your message has been verified.",
-            duration: 2000,
-          });
-        });
-      }
-      
       setInputMessage('');
       
       // Simulate friend's response after a delay
@@ -123,7 +65,7 @@ const ChatDemo: React.FC = () => {
     // First message is always friendly greeting (not suspicious)
     if (messages.length === 0) {
       responseText = "Hello! How are you? Nice to chat with you here.";
-    } else if (messages.length === 1 || messages.length == 2) {
+    } else if (messages.length === 1 || messages.length === 2) {
       // Second and third messages should also be safe to establish normal conversation
       const safeResponses = [
         "I'm doing great today! How about you?",
@@ -180,12 +122,6 @@ const ChatDemo: React.FC = () => {
     
     // Then with AI scan if Gemini is enabled
     if (geminiOptions.enabled) {
-      toast({
-        title: "AI Analysis Running",
-        description: "Incoming message is being verified...",
-        duration: 2000,
-      });
-      
       // FIX: Don't check the return value of detectScam (which is void)
       detectScam(responseText, 'text').then((aiResult) => {
         // Add or update verification result if detected
@@ -209,13 +145,6 @@ const ChatDemo: React.FC = () => {
             }
           });
         }
-        
-        // Analysis complete notification
-        toast({
-          title: "AI Analysis Complete",
-          description: "The message has been verified with AI.",
-          duration: 2000,
-        });
       });
     }
   };
@@ -272,15 +201,6 @@ const ChatDemo: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-        {scamAlerts.map(alert => (
-          <ScamAlertBanner 
-            key={`alert-${alert.id}`}
-            result={alert.result} 
-            content={alert.content} 
-            onDismiss={() => handleDismissAlert(alert.id)} 
-          />
-        ))}
-        
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
             Start a conversation...

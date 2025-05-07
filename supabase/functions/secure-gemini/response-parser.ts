@@ -21,18 +21,31 @@ export function processAiResponse(aiResponse) {
   const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT|NICE TO (MEET|CHAT))\b/i;
   const containsCommonSafe = commonSafeMessages.test(aiResponse);
   
-  // If it's a simple message pattern without suspicious indicators, override to safe
-  const containsSuspiciousIndicators = upperResponse.includes('PASSWORD') || 
-                                     upperResponse.includes('URGENT') || 
-                                     upperResponse.includes('CLICK') ||
-                                     upperResponse.includes('BANK ACCOUNT') ||
-                                     upperResponse.includes('MONEY') ||
-                                     upperResponse.includes('CREDIT CARD');
+  // Check for suspicious indicators even if common safe words exist
+  const containsSuspiciousIndicators = 
+    (upperResponse.includes('PASSWORD') || 
+    upperResponse.includes('URGENT') || 
+    upperResponse.includes('CLICK') ||
+    upperResponse.includes('BANK ACCOUNT') ||
+    upperResponse.includes('MONEY') ||
+    upperResponse.includes('CREDIT CARD')) && 
+    upperResponse.includes('VERIFY');
                                      
+  // If it's a simple message pattern without suspicious indicators, override to safe
   if (containsCommonSafe && !containsSuspiciousIndicators && aiResponse.length < 150) {
     riskLevel = 'safe';
     confidenceLevel = 'high';
     explanation = "This is a standard chat message with no suspicious elements.";
+    return { riskLevel, confidenceLevel, explanation };
+  }
+  
+  // Check for scam indicators - these are strong indicators even in mixed text
+  if ((upperResponse.includes('CREDIT CARD') && upperResponse.includes('VERIFY')) ||
+      (upperResponse.includes('BANK') && upperResponse.includes('VERIFY') && upperResponse.includes('URGENT')) ||
+      (upperResponse.includes('HTTP://VERIFY') || upperResponse.includes('HTTP://BANK'))) {
+    riskLevel = 'scam';
+    confidenceLevel = 'high';
+    explanation = "This message contains typical scam patterns requesting financial verification or urgent banking action.";
     return { riskLevel, confidenceLevel, explanation };
   }
   
