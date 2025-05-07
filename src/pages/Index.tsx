@@ -7,6 +7,7 @@ import { ScamDetectionProvider } from '@/context/ScamDetectionContext';
 import { AutoDetectionProvider } from '@/context/AutoDetectionContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ChatDemo from '@/components/chat/ChatDemo';
+import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
   return (
@@ -32,6 +33,9 @@ const Index = () => {
                       <span className="font-medium block mt-2">Neues Feature: Auch Ihre eigenen Nachrichten werden überprüft!</span>
                       Versuchen Sie, selbst eine verdächtige Nachricht zu senden (z.B. mit Wörtern wie "Passwort", "Kreditkarte", "dringend" oder URLs).
                     </p>
+                    <p className="text-muted-foreground mt-2 border-t border-muted-foreground/20 pt-2">
+                      <span className="font-medium text-primary">KI-Analyse aktiviert:</span> Alle Nachrichten werden auch mit KI auf verdächtige Inhalte überprüft.
+                    </p>
                   </div>
                   <ChatDemo />
                 </div>
@@ -39,6 +43,7 @@ const Index = () => {
             </Tabs>
           </main>
           <Footer />
+          <Toaster />
         </div>
       </AutoDetectionProvider>
     </ScamDetectionProvider>

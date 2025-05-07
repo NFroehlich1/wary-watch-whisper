@@ -7,7 +7,9 @@ import { Avatar } from "@/components/ui/avatar";
 import { Send } from "lucide-react";
 import ScamAlertBanner from '../alerts/ScamAlertBanner';
 import { useAutoDetection } from '@/context/AutoDetectionContext';
+import { useScamDetection } from '@/context/ScamDetectionContext';
 import { ScamResult } from '@/types';
+import { toast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -23,6 +25,7 @@ const ChatDemo: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { scanMessage } = useAutoDetection();
+  const { detectScam, loading, geminiOptions } = useScamDetection();
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -40,8 +43,28 @@ const ChatDemo: React.FC = () => {
       
       setMessages([...messages, newMessage]);
       
-      // NEW: Check if my own message contains suspicious content
+      // Check if my own message contains suspicious content
+      // First with local scan
       const myMessageResult = scanMessage(inputMessage);
+      
+      // Then with AI scan if Gemini is enabled
+      if (geminiOptions.enabled) {
+        toast({
+          title: "KI-Analyse läuft",
+          description: "Ihre Nachricht wird auf verdächtigen Inhalt geprüft...",
+          duration: 2000,
+        });
+        
+        detectScam(inputMessage, 'text').then(() => {
+          // AI analysis complete
+          toast({
+            title: "KI-Analyse abgeschlossen",
+            description: "Ihre Nachricht wurde überprüft.",
+            duration: 2000,
+          });
+        });
+      }
+      
       if (myMessageResult) {
         setScamAlerts(prevAlerts => [...prevAlerts, {
           id: newMessage.id,
@@ -97,13 +120,32 @@ const ChatDemo: React.FC = () => {
     
     setMessages(prevMessages => [...prevMessages, newMessage]);
     
-    // Auto-scan for suspicious content in friend's message
-    const result = scanMessage(responseText);
-    if (result) {
+    // Auto-scan for suspicious content in friend's message using local scan
+    const localResult = scanMessage(responseText);
+    
+    // Then with AI scan if Gemini is enabled
+    if (geminiOptions.enabled) {
+      toast({
+        title: "KI-Analyse läuft",
+        description: "Eingehende Nachricht wird überprüft...",
+        duration: 2000,
+      });
+      
+      detectScam(responseText, 'text').then(() => {
+        // Analysis complete notification
+        toast({
+          title: "KI-Analyse abgeschlossen",
+          description: "Die Nachricht wurde mit KI überprüft.",
+          duration: 2000,
+        });
+      });
+    }
+    
+    if (localResult) {
       setScamAlerts(prevAlerts => [...prevAlerts, {
         id: newMessage.id,
         content: responseText,
-        result
+        result: localResult
       }]);
     }
   };
@@ -182,9 +224,13 @@ const ChatDemo: React.FC = () => {
           <Button 
             onClick={handleSend} 
             size="icon" 
-            disabled={!inputMessage.trim()}
+            disabled={!inputMessage.trim() || loading}
           >
-            <Send className="h-4 w-4" />
+            {loading ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </CardFooter>
