@@ -24,13 +24,13 @@ const ScamPopupDialog: React.FC<ScamPopupDialogProps> = ({ isOpen, setIsOpen, re
     setIsLoading(true);
     try {
       const response = await askAnalysisQuestion(
-        "Was ist an dieser Nachricht verdächtig? Erkläre in einfachen Worten, warum es gefährlich sein könnte.", 
+        "What's suspicious about this message? Explain in simple terms why it might be dangerous.", 
         result
       );
       setAnalysis(response);
     } catch (error) {
       console.error("Error getting analysis:", error);
-      setAnalysis("Konnte keine detaillierte Analyse laden.");
+      setAnalysis("Could not load detailed analysis.");
     } finally {
       setIsLoading(false);
     }
@@ -66,9 +66,9 @@ const ScamPopupDialog: React.FC<ScamPopupDialogProps> = ({ isOpen, setIsOpen, re
       <DialogContent className="max-w-lg">
         <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
-            <DialogTitle>Sicherheitswarnung</DialogTitle>
+            <DialogTitle>Security Warning</DialogTitle>
             <DialogDescription>
-              Analyse einer möglicherweise verdächtigen Nachricht
+              Analysis of a potentially suspicious message
             </DialogDescription>
           </div>
           <StatusBadge 
@@ -79,17 +79,17 @@ const ScamPopupDialog: React.FC<ScamPopupDialogProps> = ({ isOpen, setIsOpen, re
 
         <div className="space-y-4">
           <div className="bg-muted rounded p-3 text-sm">
-            <div className="font-medium mb-1 text-muted-foreground">Originaltext:</div>
+            <div className="font-medium mb-1 text-muted-foreground">Original text:</div>
             <div className="whitespace-pre-wrap">{highlightContent(content)}</div>
           </div>
           
           <div className="prose prose-sm max-w-none dark:prose-invert">
-            <h4>Warum ist diese Nachricht verdächtig?</h4>
+            <h4>Why is this message suspicious?</h4>
             <p>{result.justification}</p>
             
             {analysis && (
               <div className="mt-3 border-t pt-3">
-                <h4>Detaillierte Analyse:</h4>
+                <h4>Detailed Analysis:</h4>
                 <p className="whitespace-pre-line">{analysis}</p>
               </div>
             )}
@@ -100,14 +100,14 @@ const ScamPopupDialog: React.FC<ScamPopupDialogProps> = ({ isOpen, setIsOpen, re
         
         <div className="flex justify-between mt-4">
           <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Schließen
+            Close
           </Button>
           {!analysis && (
             <Button 
               onClick={getMoreAnalysis} 
               disabled={isLoading}
             >
-              {isLoading ? 'Lädt...' : 'Tiefere Analyse'}
+              {isLoading ? 'Loading...' : 'Deeper Analysis'}
             </Button>
           )}
         </div>

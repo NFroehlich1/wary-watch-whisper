@@ -37,16 +37,16 @@ const ScamAlertBanner: React.FC<ScamAlertBannerProps> = ({ result, content, onDi
           <ShieldAlert className={`h-5 w-5 mr-2 mt-0.5 ${result.riskLevel === 'scam' ? 'text-red-500' : result.riskLevel === 'suspicious' ? 'text-amber-500' : 'text-green-500'}`} />
           <div>
             <AlertTitle className={`font-bold ${result.riskLevel === 'scam' ? 'text-red-700 dark:text-red-300' : result.riskLevel === 'suspicious' ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-300'}`}>
-              {result.riskLevel === 'scam' ? 'Warnung: Möglicher Betrug erkannt!' : 
-               result.riskLevel === 'suspicious' ? 'Achtung: Verdächtige Nachricht' : 
-               'Hinweis: Möglicher Sicherheitshinweis'}
+              {result.riskLevel === 'scam' ? 'Warning: Potential scam detected!' : 
+               result.riskLevel === 'suspicious' ? 'Caution: Suspicious message' : 
+               'Note: Potential security information'}
             </AlertTitle>
             <AlertDescription className="text-sm mt-1">
               {result.riskLevel === 'scam' 
-                ? 'Diese Nachricht enthält betrügerische Elemente. Klicken Sie auf Details für mehr Informationen.'
+                ? 'This message contains fraudulent elements. Click Details for more information.'
                 : result.riskLevel === 'suspicious'
-                  ? 'Diese Nachricht enthält verdächtige Elemente. Seien Sie vorsichtig.'
-                  : 'Diese Nachricht könnte sicherheitsrelevant sein.'}
+                  ? 'This message contains suspicious elements. Please be cautious.'
+                  : 'This message might be security-relevant.'}
             </AlertDescription>
           </div>
         </div>
@@ -64,7 +64,7 @@ const ScamAlertBanner: React.FC<ScamAlertBannerProps> = ({ result, content, onDi
             size="sm" 
             onClick={handleDismiss}
           >
-            Schließen
+            Close
           </Button>
         </div>
       </Alert>

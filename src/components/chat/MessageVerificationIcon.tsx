@@ -34,18 +34,20 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const { askAnalysisQuestion } = useScamDetection();
   
+  console.log('Rendering MessageVerificationIcon:', { messageId, hasResult: !!result, riskLevel: result?.riskLevel });
+  
   // If no result is available, show a neutral shield
   if (!result) {
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="inline-flex cursor-pointer text-muted-foreground/70 hover:text-muted-foreground p-1.5 hover:bg-muted/30 rounded-full transition-colors">
+            <div className="inline-flex cursor-pointer text-muted-foreground/70 hover:text-muted-foreground p-2 hover:bg-muted/30 rounded-full transition-colors">
               <Shield className="h-4 w-4" />
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Noch keine Verifizierung</p>
+            <p>No verification yet</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -69,12 +71,12 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
   const getTooltipText = () => {
     switch (result.riskLevel) {
       case 'scam':
-        return 'Warnung: Scam-Nachricht erkannt';
+        return 'Warning: Scam message detected';
       case 'suspicious':
-        return 'Vorsicht: Verdächtige Nachricht';
+        return 'Caution: Suspicious message';
       case 'safe':
       default:
-        return 'Sichere Nachricht';
+        return 'Safe message';
     }
   };
 
@@ -102,14 +104,15 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div 
-              className={`z-10 inline-flex cursor-pointer hover:opacity-80 p-1.5 rounded-full ${getIconBackground()} transition-all duration-200 hover:scale-110`}
+            <button 
+              className={`z-30 flex items-center justify-center cursor-pointer hover:opacity-80 p-2.5 rounded-full ${getIconBackground()} transition-all duration-200 hover:scale-110`}
               onClick={handleVerificationClick}
-              role="button"
-              aria-label="Nachrichtenverifizierung anzeigen"
+              aria-label="Show message verification"
+              type="button"
+              style={{ minWidth: '24px', minHeight: '24px' }}
             >
               {getVerificationIcon()}
-            </div>
+            </button>
           </TooltipTrigger>
           <TooltipContent>
             <p>{getTooltipText()}</p>
@@ -122,10 +125,10 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {getVerificationIcon()}
-              <span>Nachrichtenverifizierung</span>
+              <span>Message Verification</span>
             </DialogTitle>
             <DialogDescription>
-              Analyse der Nachricht: "{messageContent.length > 50 ? messageContent.substring(0, 50) + '...' : messageContent}"
+              Analysis of message: "{messageContent.length > 50 ? messageContent.substring(0, 50) + '...' : messageContent}"
             </DialogDescription>
           </DialogHeader>
           
@@ -139,7 +142,7 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
             </div>
             
             <div className="mt-2 p-3 bg-muted rounded-md text-sm text-muted-foreground">
-              <div className="font-medium mb-1">Begründung:</div>
+              <div className="font-medium mb-1">Reason:</div>
               <div className="text-foreground">
                 {result.aiVerification || result.justification}
               </div>

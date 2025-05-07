@@ -35,7 +35,7 @@ export const getTranslation = (key: string, language: Language): string => {
     }
   };
 
-  // Always return English translation regardless of the language parameter
+  // Always return English translation
   return translations[key]?.['en'] || key;
 };
 

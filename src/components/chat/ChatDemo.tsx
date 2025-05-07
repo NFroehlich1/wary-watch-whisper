@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,6 @@ interface Message {
 }
 
 const ChatDemo: React.FC = () => {
-  // ... keep existing code (message state, input handling, etc.)
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [scamAlerts, setScamAlerts] = useState<{id: string, content: string, result: ScamResult}[]>([]);
@@ -29,6 +29,11 @@ const ChatDemo: React.FC = () => {
   
   const { scanMessage } = useAutoDetection();
   const { detectScam, loading, geminiOptions } = useScamDetection();
+
+  // Debug scam alerts when they change
+  useEffect(() => {
+    console.log("Current scam alerts:", scamAlerts);
+  }, [scamAlerts]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -44,7 +49,7 @@ const ChatDemo: React.FC = () => {
         timestamp: new Date()
       };
       
-      setMessages([...messages, newMessage]);
+      setMessages(prevMessages => [...prevMessages, newMessage]);
       
       // Check if my own message contains suspicious content
       // First with local scan
@@ -52,7 +57,7 @@ const ChatDemo: React.FC = () => {
       
       // Add verification result to scamAlerts if detected
       if (myMessageResult) {
-        console.log('Detected risk in own message:', myMessageResult.riskLevel);
+        console.log('Detected risk in own message:', newMessage.id, myMessageResult.riskLevel);
         setScamAlerts(prevAlerts => [...prevAlerts, {
           id: newMessage.id,
           content: inputMessage,
@@ -63,17 +68,39 @@ const ChatDemo: React.FC = () => {
       // Then with AI scan if Gemini is enabled
       if (geminiOptions.enabled) {
         toast({
-          title: "KI-Analyse läuft",
-          description: "Ihre Nachricht wird auf verdächtigen Inhalt geprüft...",
+          title: "AI Analysis Running",
+          description: "Your message is being checked for suspicious content...",
           duration: 2000,
         });
         
         detectScam(inputMessage, 'text').then((aiResult) => {
           // AI analysis complete
           console.log('AI verification result for message:', newMessage.id, aiResult);
+          
+          if (aiResult) {
+            setScamAlerts(prevAlerts => {
+              // Update existing alert or add new one
+              const existingAlertIndex = prevAlerts.findIndex(a => a.id === newMessage.id);
+              if (existingAlertIndex >= 0) {
+                const updatedAlerts = [...prevAlerts];
+                updatedAlerts[existingAlertIndex] = {
+                  ...updatedAlerts[existingAlertIndex],
+                  result: aiResult
+                };
+                return updatedAlerts;
+              } else {
+                return [...prevAlerts, {
+                  id: newMessage.id,
+                  content: inputMessage,
+                  result: aiResult
+                }];
+              }
+            });
+          }
+          
           toast({
-            title: "KI-Analyse abgeschlossen",
-            description: "Ihre Nachricht wurde überprüft.",
+            title: "AI Analysis Complete",
+            description: "Your message has been verified.",
             duration: 2000,
           });
         });
@@ -92,27 +119,27 @@ const ChatDemo: React.FC = () => {
     const randomResponse = Math.random();
     
     if (messages.length === 0) {
-      responseText = "Hallo! Wie geht's? Schön, dass wir über diesen Chat sprechen können.";
+      responseText = "Hello! How are you? Nice to chat with you here.";
     } else if (randomResponse < 0.2) {
       // 20% chance of sending a suspicious message
       const suspiciousMessages = [
-        "Hey, kannst du mir schnell bei etwas helfen? Ich brauche dringend dein Passwort für eine wichtige Sache. Es ist ganz dringend!",
-        "Klicke hier, um deinen Gewinn abzuholen: http://suspicious-fake-site.com/claim-prize?user=you",
-        "Ich habe eine dringende Nachricht von der Bank bekommen. Du musst sofort hier verifizieren: http://bank-secure-verify.net/urgent",
-        "Deine Kreditkarte wurde gesperrt! Verifiziere hier deine Daten: http://verify-bank-account.com",
-        "Hey, schau dir dieses tolle Angebot an! Du kannst 5000€ verdienen. Klicke hier: http://get-rich-quick.net/offer"
+        "Hey, can you help me with something quickly? I urgently need your password for an important matter. It's very urgent!",
+        "Click here to claim your prize: http://suspicious-fake-site.com/claim-prize?user=you",
+        "I received an urgent message from the bank. You need to verify immediately: http://bank-secure-verify.net/urgent",
+        "Your credit card has been blocked! Verify your details here: http://verify-bank-account.com",
+        "Hey, check out this great offer! You can earn $5000. Click here: http://get-rich-quick.net/offer"
       ];
       responseText = suspiciousMessages[Math.floor(Math.random() * suspiciousMessages.length)];
       
     } else {
       // Normal responses
       const normalResponses = [
-        "Cool, danke für die Info!",
-        "Wie war dein Tag?",
-        "Hast du schon die Neuigkeiten gehört?",
-        "Wollen wir uns am Wochenende treffen?",
-        "Ich habe gerade einen tollen Film gesehen.",
-        "Kennst du ein gutes Restaurant in der Nähe?"
+        "Cool, thanks for the info!",
+        "How was your day?",
+        "Have you heard the latest news?",
+        "Want to meet up this weekend?",
+        "I just watched a great movie.",
+        "Do you know a good restaurant nearby?"
       ];
       responseText = normalResponses[Math.floor(Math.random() * normalResponses.length)];
     }
@@ -131,7 +158,7 @@ const ChatDemo: React.FC = () => {
     
     // Add verification result if detected
     if (localResult) {
-      console.log('Detected risk in friend message:', localResult.riskLevel);
+      console.log('Detected risk in friend message:', newMessage.id, localResult.riskLevel);
       setScamAlerts(prevAlerts => [...prevAlerts, {
         id: newMessage.id,
         content: responseText,
@@ -142,16 +169,38 @@ const ChatDemo: React.FC = () => {
     // Then with AI scan if Gemini is enabled
     if (geminiOptions.enabled) {
       toast({
-        title: "KI-Analyse läuft",
-        description: "Eingehende Nachricht wird überprüft...",
+        title: "AI Analysis Running",
+        description: "Incoming message is being verified...",
         duration: 2000,
       });
       
-      detectScam(responseText, 'text').then(() => {
+      detectScam(responseText, 'text').then((aiResult) => {
+        // Add or update verification result if detected
+        if (aiResult) {
+          setScamAlerts(prevAlerts => {
+            // Check if we already have an alert for this message
+            const existingAlertIndex = prevAlerts.findIndex(a => a.id === newMessage.id);
+            if (existingAlertIndex >= 0) {
+              const updatedAlerts = [...prevAlerts];
+              updatedAlerts[existingAlertIndex] = {
+                ...updatedAlerts[existingAlertIndex],
+                result: aiResult
+              };
+              return updatedAlerts;
+            } else {
+              return [...prevAlerts, {
+                id: newMessage.id,
+                content: responseText,
+                result: aiResult
+              }];
+            }
+          });
+        }
+        
         // Analysis complete notification
         toast({
-          title: "KI-Analyse abgeschlossen",
-          description: "Die Nachricht wurde mit KI überprüft.",
+          title: "AI Analysis Complete",
+          description: "The message has been verified with AI.",
           duration: 2000,
         });
       });
@@ -172,7 +221,7 @@ const ChatDemo: React.FC = () => {
   // Helper function to get verification result for a message
   const getVerificationForMessage = (messageId: string) => {
     const result = scamAlerts.find(alert => alert.id === messageId)?.result;
-    console.log('Verification for message', messageId, result);
+    console.log('Verification for message', messageId, result ? result.riskLevel : 'none');
     return result;
   };
 
@@ -221,7 +270,7 @@ const ChatDemo: React.FC = () => {
         
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-            Starten Sie eine Konversation...
+            Start a conversation...
           </div>
         ) : (
           messages.map(message => (
@@ -230,11 +279,11 @@ const ChatDemo: React.FC = () => {
               className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}
             >
               <div 
-                className={`max-w-[75%] px-4 py-2 rounded-lg ${getMessageBackground(message.id, message.sender === 'me')}`}
+                className={`relative max-w-[75%] px-4 py-2 rounded-lg ${getMessageBackground(message.id, message.sender === 'me')}`}
               >
-                <div className="flex items-center gap-2 relative">
+                <div className="flex items-center gap-2">
                   {message.sender === 'friend' && (
-                    <div className="flex-none">
+                    <div className="flex-none absolute -left-6 top-1/2 transform -translate-y-1/2">
                       <MessageVerificationIcon 
                         messageId={message.id}
                         messageContent={message.text}
@@ -242,9 +291,9 @@ const ChatDemo: React.FC = () => {
                       />
                     </div>
                   )}
-                  <div className="whitespace-pre-wrap break-words flex-1">{message.text}</div>
+                  <div className="whitespace-pre-wrap break-words flex-1 pl-1">{message.text}</div>
                   {message.sender === 'me' && (
-                    <div className="flex-none">
+                    <div className="flex-none absolute -right-6 top-1/2 transform -translate-y-1/2">
                       <MessageVerificationIcon 
                         messageId={message.id}
                         messageContent={message.text}
@@ -272,7 +321,7 @@ const ChatDemo: React.FC = () => {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Nachricht schreiben..."
+            placeholder="Write a message..."
             className="flex-1"
           />
           <Button 
