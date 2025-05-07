@@ -173,9 +173,12 @@ const ChatDemo: React.FC = () => {
       setUserContext(prev => ({ ...prev, expressedInterest: true }));
       
       // Advance to next stage if user expresses interest
-      if (prev => prev.stage < 5) {
-        setUserContext(prev => ({ ...prev, stage: prev.stage + 1 }));
-      }
+      setUserContext(prev => {
+        if (prev.stage < 5) {
+          return { ...prev, stage: prev.stage + 1 };
+        }
+        return prev;
+      });
     }
     
     // Check for account information sharing
