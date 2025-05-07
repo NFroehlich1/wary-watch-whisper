@@ -19,7 +19,7 @@ interface Message {
 const ChatDemo: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [scamAlert, setScamAlert] = useState<{content: string, result: ScamResult} | null>(null);
+  const [scamAlerts, setScamAlerts] = useState<{id: string, content: string, result: ScamResult}[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { scanMessage } = useAutoDetection();
@@ -39,6 +39,17 @@ const ChatDemo: React.FC = () => {
       };
       
       setMessages([...messages, newMessage]);
+      
+      // NEW: Check if my own message contains suspicious content
+      const myMessageResult = scanMessage(inputMessage);
+      if (myMessageResult) {
+        setScamAlerts(prevAlerts => [...prevAlerts, {
+          id: newMessage.id,
+          content: inputMessage,
+          result: myMessageResult
+        }]);
+      }
+      
       setInputMessage('');
       
       // Simulate friend's response after a delay
@@ -64,11 +75,6 @@ const ChatDemo: React.FC = () => {
       ];
       responseText = suspiciousMessages[Math.floor(Math.random() * suspiciousMessages.length)];
       
-      // Auto-scan for suspicious content
-      const result = scanMessage(responseText);
-      if (result) {
-        setScamAlert({content: responseText, result});
-      }
     } else {
       // Normal responses
       const normalResponses = [
@@ -90,6 +96,16 @@ const ChatDemo: React.FC = () => {
     };
     
     setMessages(prevMessages => [...prevMessages, newMessage]);
+    
+    // Auto-scan for suspicious content in friend's message
+    const result = scanMessage(responseText);
+    if (result) {
+      setScamAlerts(prevAlerts => [...prevAlerts, {
+        id: newMessage.id,
+        content: responseText,
+        result
+      }]);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -97,6 +113,10 @@ const ChatDemo: React.FC = () => {
       e.preventDefault();
       handleSend();
     }
+  };
+  
+  const handleDismissAlert = (alertId: string) => {
+    setScamAlerts(prevAlerts => prevAlerts.filter(alert => alert.id !== alertId));
   };
 
   return (
@@ -110,13 +130,14 @@ const ChatDemo: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-        {scamAlert && (
+        {scamAlerts.map(alert => (
           <ScamAlertBanner 
-            result={scamAlert.result} 
-            content={scamAlert.content} 
-            onDismiss={() => setScamAlert(null)} 
+            key={`alert-${alert.id}`}
+            result={alert.result} 
+            content={alert.content} 
+            onDismiss={() => handleDismissAlert(alert.id)} 
           />
-        )}
+        ))}
         
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground text-sm">

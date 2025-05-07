@@ -26,9 +26,11 @@ const Index = () => {
               <TabsContent value="chat" className="py-4 sm:py-6">
                 <div className="max-w-lg mx-auto">
                   <div className="mb-4 bg-muted p-3 rounded-md text-sm">
-                    <p className="font-medium">Demo-Chat mit automatischer Betrugswarnung</p>
+                    <p className="font-medium">Demo-Chat mit beidseitiger Betrugswarnung</p>
                     <p className="text-muted-foreground mt-1">
                       Senden Sie einige Nachrichten. Der "Freund" wird gelegentlich verdächtige Links oder Texte senden, die automatisch erkannt werden.
+                      <span className="font-medium block mt-2">Neues Feature: Auch Ihre eigenen Nachrichten werden überprüft!</span>
+                      Versuchen Sie, selbst eine verdächtige Nachricht zu senden (z.B. mit Wörtern wie "Passwort", "Kreditkarte", "dringend" oder URLs).
                     </p>
                   </div>
                   <ChatDemo />
