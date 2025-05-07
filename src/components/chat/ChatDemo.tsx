@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -122,7 +121,6 @@ const ChatDemo: React.FC = () => {
     
     // Then with AI scan if Gemini is enabled
     if (geminiOptions.enabled) {
-      // FIX: Don't check the return value of detectScam (which is void)
       detectScam(responseText, 'text').then((aiResult) => {
         // Add or update verification result if detected
         if (aiResult) {
@@ -167,26 +165,25 @@ const ChatDemo: React.FC = () => {
     return result;
   };
 
-  // Helper function to get message background color based on verification result
+  // Helper function to get message background color based on sender and verification result
   const getMessageBackground = (messageId: string, isMe: boolean) => {
+    // Always use appropriate styling for user messages regardless of verification
+    if (isMe) {
+      return 'bg-primary text-primary-foreground';
+    }
+    
     const verification = getVerificationForMessage(messageId);
     
-    if (!verification) return isMe ? 'bg-primary' : 'bg-muted';
+    if (!verification) return 'bg-muted';
     
     switch (verification.riskLevel) {
       case 'scam':
-        return isMe 
-          ? 'bg-red-600 text-white' 
-          : 'bg-red-100 dark:bg-red-900/30 text-foreground';
+        return 'bg-red-100 dark:bg-red-900/30 text-foreground';
       case 'suspicious':
-        return isMe 
-          ? 'bg-amber-500 text-white' 
-          : 'bg-amber-100 dark:bg-amber-900/30 text-foreground';
+        return 'bg-amber-100 dark:bg-amber-900/30 text-foreground';
       case 'safe':
       default:
-        return isMe 
-          ? 'bg-primary text-primary-foreground' 
-          : 'bg-green-100 dark:bg-green-900/20 text-foreground';
+        return 'bg-green-100 dark:bg-green-900/20 text-foreground';
     }
   };
 
