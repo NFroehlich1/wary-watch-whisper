@@ -157,7 +157,7 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
         toast({
           title: "AI Analysis",
           description: "AI analysis is disabled. Enable it in settings.",
-          variant: "warning",
+          variant: "default", // Changed from "warning" to "default" to fix the type error
         });
         detectedRisk.justification = "AI analysis is disabled. Enable it in settings for full protection.";
       }
