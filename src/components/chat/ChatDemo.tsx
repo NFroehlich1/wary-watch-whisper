@@ -11,6 +11,7 @@ import { useScamDetection } from '@/context/ScamDetectionContext';
 import { ScamResult } from '@/types';
 import { toast } from "@/hooks/use-toast";
 import MessageVerificationIcon from './MessageVerificationIcon';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Message {
   id: string;
@@ -24,6 +25,7 @@ const ChatDemo: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [scamAlerts, setScamAlerts] = useState<{id: string, content: string, result: ScamResult}[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
   
   const { scanMessage } = useAutoDetection();
   const { detectScam, loading, geminiOptions } = useScamDetection();
@@ -167,6 +169,29 @@ const ChatDemo: React.FC = () => {
     return scamAlerts.find(alert => alert.id === messageId)?.result;
   };
 
+  // Helper function to get message background color based on verification result
+  const getMessageBackground = (messageId: string, isMe: boolean) => {
+    const verification = getVerificationForMessage(messageId);
+    
+    if (!verification) return isMe ? 'bg-primary' : 'bg-muted';
+    
+    switch (verification.riskLevel) {
+      case 'scam':
+        return isMe 
+          ? 'bg-red-600 text-white' 
+          : 'bg-red-100 dark:bg-red-900/30 text-foreground';
+      case 'suspicious':
+        return isMe 
+          ? 'bg-amber-500 text-white' 
+          : 'bg-amber-100 dark:bg-amber-900/30 text-foreground';
+      case 'safe':
+      default:
+        return isMe 
+          ? 'bg-primary text-primary-foreground' 
+          : 'bg-green-100 dark:bg-green-900/20 text-foreground';
+    }
+  };
+
   return (
     <Card className="w-full max-w-lg mx-auto h-[70vh] flex flex-col">
       <CardHeader className="border-b bg-muted/50 py-3">
@@ -198,11 +223,7 @@ const ChatDemo: React.FC = () => {
               className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}
             >
               <div 
-                className={`max-w-[75%] px-4 py-2 rounded-lg ${
-                  message.sender === 'me' 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-muted'
-                }`}
+                className={`max-w-[75%] px-4 py-2 rounded-lg ${getMessageBackground(message.id, message.sender === 'me')}`}
               >
                 <div className="flex items-start">
                   {message.sender === 'friend' && (

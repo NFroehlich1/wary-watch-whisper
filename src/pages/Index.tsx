@@ -39,7 +39,21 @@ const Index = () => {
                         <span className="font-medium text-primary">KI-Analyse aktiviert:</span> Alle Nachrichten werden auch mit KI auf verdächtige Inhalte überprüft.
                       </p>
                       <p className="text-muted-foreground mt-2 border-t border-muted-foreground/20 pt-2">
-                        <span className="font-medium text-primary">Neues Feature - Verifizierungsicons:</span> Klicken Sie auf die Schutzschild-Icons neben jeder Nachricht, um Details zur Verifizierung zu sehen und Fragen zur Analyse zu stellen.
+                        <span className="font-medium text-primary">Sicherheitsicon:</span> Jede Nachricht hat ein Verifizierungsicon:
+                        <span className="inline-flex items-center gap-2 ml-2">
+                          <span className="p-1 rounded-full bg-green-50">
+                            <span className="text-green-500">✓</span>
+                          </span> Sicher,
+                          <span className="p-1 rounded-full bg-amber-50">
+                            <span className="text-amber-500">!</span>
+                          </span> Verdächtig,
+                          <span className="p-1 rounded-full bg-red-50">
+                            <span className="text-red-500">✗</span>
+                          </span> Scam
+                        </span>
+                      </p>
+                      <p className="text-muted-foreground mt-2 border-t border-muted-foreground/20 pt-2">
+                        <span className="font-medium text-primary">Interaktive Analyse:</span> Klicken Sie auf die Schutzschild-Icons neben jeder Nachricht, um Details zur Verifizierung zu sehen und Fragen zur Analyse zu stellen.
                       </p>
                     </div>
                     <ChatDemo />

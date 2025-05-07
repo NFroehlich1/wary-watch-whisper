@@ -77,6 +77,19 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
         return 'Sichere Nachricht';
     }
   };
+
+  // Get background color based on risk level for the icon background
+  const getIconBackground = () => {
+    switch (result.riskLevel) {
+      case 'scam':
+        return 'bg-red-50 dark:bg-red-900/20';
+      case 'suspicious':
+        return 'bg-amber-50 dark:bg-amber-900/20';
+      case 'safe':
+      default:
+        return 'bg-green-50 dark:bg-green-900/20';
+    }
+  };
   
   // Handle click on verification icon
   const handleVerificationClick = () => {
@@ -89,7 +102,7 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <span 
-              className="inline-flex mr-2 cursor-pointer hover:opacity-80" 
+              className={`inline-flex mr-2 cursor-pointer hover:opacity-80 p-1 rounded-full ${getIconBackground()}`}
               onClick={handleVerificationClick}
             >
               {getVerificationIcon()}
