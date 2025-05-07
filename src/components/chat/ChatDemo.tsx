@@ -35,6 +35,7 @@ const ChatDemo: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [scamAlerts, setScamAlerts] = useState<{id: string, content: string, result: ScamResult}[]>([]);
   const [userContext, setUserContext] = useState<UserContext>({ stage: 0 });
+  const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   
@@ -91,7 +92,7 @@ const ChatDemo: React.FC = () => {
   }, []);
 
   const handleSend = () => {
-    if (inputMessage.trim()) {
+    if (inputMessage.trim() && !isGeneratingResponse) {
       const newMessage: Message = {
         id: Date.now().toString(),
         sender: 'me',
@@ -126,8 +127,14 @@ const ChatDemo: React.FC = () => {
                          lowerInput.includes('savings')
       }));
       
+      // Set generating state to true before generating response
+      setIsGeneratingResponse(true);
+      
       // Generate AI response after a short delay
-      setTimeout(() => generateBotResponse(inputMessage), 700);
+      setTimeout(() => {
+        generateBotResponse(inputMessage);
+        setIsGeneratingResponse(false);
+      }, 700);
     }
   };
   
@@ -405,13 +412,14 @@ const ChatDemo: React.FC = () => {
             onKeyDown={handleKeyDown}
             placeholder="Write a message..."
             className="flex-1"
+            disabled={isGeneratingResponse}
           />
           <Button 
             onClick={handleSend} 
             size="icon" 
-            disabled={!inputMessage.trim() || loading}
+            disabled={!inputMessage.trim() || loading || isGeneratingResponse}
           >
-            {loading ? (
+            {loading || isGeneratingResponse ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent" />
             ) : (
               <Send className="h-4 w-4" />
