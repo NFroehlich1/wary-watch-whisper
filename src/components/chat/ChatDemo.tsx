@@ -35,8 +35,10 @@ const ChatDemo: React.FC = () => {
   const [scamAlerts, setScamAlerts] = useState<{id: string, content: string, result: ScamResult}[]>([]);
   const [userContext, setUserContext] = useState<UserContext>({ stage: 0 });
   const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
+  const [isProcessingUserInput, setIsProcessingUserInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const processingRef = useRef(false);
   
   const { detectScam, loading, geminiOptions } = useScamDetection();
 
@@ -176,6 +178,13 @@ const ChatDemo: React.FC = () => {
   // Generate the next stage of the scam based on context - memoize to prevent unnecessary re-renders
   const generateBotResponse = useCallback(async (userInput: string) => {
     try {
+      if (processingRef.current) {
+        console.log("Already processing a response, skipping");
+        return;
+      }
+      
+      processingRef.current = true;
+      console.log("Generating bot response for:", userInput);
       const lowerInput = userInput.toLowerCase();
       let responseText = '';
       
@@ -223,13 +232,16 @@ const ChatDemo: React.FC = () => {
           responseText = `I'd like to get back to discussing our exclusive investment opportunity, ${personalGreeting}With guaranteed returns of 15-20% annually, this is something you won't want to miss. We're only offering it to select clients, and I believe you'd be a perfect fit. Shall we continue with the qualification process?`;
       }
       
+      const messageId = Date.now().toString();
+      
       const newMessage: Message = {
-        id: Date.now().toString(),
+        id: messageId,
         sender: 'bot',
         text: responseText,
         timestamp: new Date()
       };
       
+      // Add the bot's message to the messages
       setMessages(prevMessages => [...prevMessages, newMessage]);
       
       // Use AI detection for bot's message - ensure we're not duplicating
@@ -239,17 +251,18 @@ const ChatDemo: React.FC = () => {
           
           // Add verification result - check for duplicates by id before adding
           if (aiResult) {
-            console.log('AI detected risk in bot message:', newMessage.id, aiResult.riskLevel);
+            console.log('AI detected risk in bot message:', messageId, aiResult.riskLevel);
+            
             setScamAlerts(prevAlerts => {
               // Check if this message ID already exists in alerts
-              const existsAlready = prevAlerts.some(alert => alert.id === newMessage.id);
+              const existsAlready = prevAlerts.some(alert => alert.id === messageId);
               if (existsAlready) {
                 return prevAlerts; // Don't add duplicate
               }
               return [
                 ...prevAlerts, 
                 {
-                  id: newMessage.id,
+                  id: messageId,
                   content: responseText,
                   result: aiResult
                 }
@@ -271,20 +284,26 @@ const ChatDemo: React.FC = () => {
     } finally {
       // Always set generating state to false when done
       setIsGeneratingResponse(false);
+      processingRef.current = false;
     }
   }, [userContext, geminiOptions.enabled, detectScam]);
 
   const handleSend = () => {
-    if (inputMessage.trim() && !isGeneratingResponse) {
+    if (inputMessage.trim() && !isProcessingUserInput && !isGeneratingResponse && !loading) {
+      // Set processing flags to prevent duplicate messages
+      setIsProcessingUserInput(true);
+      setIsGeneratingResponse(true);
+      
       // Create user message
+      const userMessageId = Date.now().toString();
       const newMessage: Message = {
-        id: Date.now().toString(),
+        id: userMessageId,
         sender: 'me',
         text: inputMessage,
         timestamp: new Date()
       };
       
-      // Prevent duplicate messages by using functional state update
+      // Add user message
       setMessages(prevMessages => [...prevMessages, newMessage]);
       setInputMessage('');
       
@@ -312,12 +331,12 @@ const ChatDemo: React.FC = () => {
                          lowerInput.includes('savings')
       }));
       
-      // Set generating state to true before generating response
-      setIsGeneratingResponse(true);
-      
-      // Generate AI response after a short delay
+      // Use a copy of the user message for bot response to avoid capturing changing state
       const userMessageCopy = inputMessage.trim();
+      
+      // Add a delay before generating the bot response to avoid race conditions
       setTimeout(() => {
+        setIsProcessingUserInput(false);
         generateBotResponse(userMessageCopy);
       }, 700);
     }
@@ -336,8 +355,7 @@ const ChatDemo: React.FC = () => {
 
   // Helper function to get verification result for a message
   const getVerificationForMessage = (messageId: string) => {
-    const result = scamAlerts.find(alert => alert.id === messageId)?.result;
-    return result;
+    return scamAlerts.find(alert => alert.id === messageId)?.result;
   };
 
   // Helper function to get message background color based on sender and verification result
@@ -361,6 +379,13 @@ const ChatDemo: React.FC = () => {
     }
   };
 
+  // Log state changes to help debug issues
+  useEffect(() => {
+    console.log("isGeneratingResponse changed:", isGeneratingResponse);
+    console.log("isProcessingUserInput changed:", isProcessingUserInput);
+    console.log("loading state:", loading);
+  }, [isGeneratingResponse, isProcessingUserInput, loading]);
+
   return (
     <Card className="w-full max-w-lg mx-auto h-[70vh] flex flex-col">
       <CardHeader className="border-b bg-muted/50 py-3">
@@ -377,9 +402,9 @@ const ChatDemo: React.FC = () => {
             Start a conversation...
           </div>
         ) : (
-          messages.map(message => (
+          messages.map((message, index) => (
             <div 
-              key={message.id} 
+              key={`${message.id}-${index}`} 
               className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}
             >
               <div 
@@ -418,14 +443,14 @@ const ChatDemo: React.FC = () => {
             onKeyDown={handleKeyDown}
             placeholder="Write a message..."
             className="flex-1"
-            disabled={isGeneratingResponse || loading}
+            disabled={isGeneratingResponse || isProcessingUserInput || loading}
           />
           <Button 
             onClick={handleSend} 
             size="icon" 
-            disabled={!inputMessage.trim() || loading || isGeneratingResponse}
+            disabled={!inputMessage.trim() || isProcessingUserInput || isGeneratingResponse || loading}
           >
-            {loading || isGeneratingResponse ? (
+            {isProcessingUserInput || isGeneratingResponse || loading ? (
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent" />
             ) : (
               <Send className="h-4 w-4" />
