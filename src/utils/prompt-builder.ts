@@ -24,7 +24,14 @@ export const getUrlPromptInEnglish = (url: string): string => {
  * Creates a prompt for text analysis in English
  */
 export const getTextPromptInEnglish = (text: string): string => {
-  return `Analyze if this message contains signs of scam, suspicious content or if it's safe. Message: "${text}". 
+  return `Analyze if this message from a WhatsApp or similar chat contains signs of scam, suspicious content or if it's safe. Message: "${text}". 
+  
+  IMPORTANT GUIDELINES:
+  - ALWAYS treat standard chat expressions like "Thanks", "Thank you", "Sure", "OK", "Yes", "No", "Hello", "Hi", "Hey" as COMPLETELY SAFE.
+  - Short replies that are normal in messaging contexts (even single words like "Thanks") are ALWAYS SAFE.
+  - Consider context - these are chat messages, not emails or websites, so brevity is normal and not suspicious.
+  - Only flag when there are genuine red flags (requests for money, personal information, or clicking links).
+  
   Please respond with one of these exact classifications first:
   RESULT: SAFE
   RESULT: SUSPICIOUS

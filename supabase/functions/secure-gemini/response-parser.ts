@@ -18,19 +18,21 @@ export function processAiResponse(aiResponse) {
   const upperResponse = aiResponse.toUpperCase();
   
   // Check for common greeting patterns that should always be classified as safe
-  const greetingPattern = /\b(HELLO|HI|HEY|GREETING|HOW ARE YOU|NICE TO (MEET|CHAT))\b/i;
-  const containsGreeting = greetingPattern.test(aiResponse);
+  const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT|NICE TO (MEET|CHAT))\b/i;
+  const containsCommonSafe = commonSafeMessages.test(aiResponse);
   
-  // If it's a simple greeting message without suspicious indicators, override to safe
+  // If it's a simple message pattern without suspicious indicators, override to safe
   const containsSuspiciousIndicators = upperResponse.includes('PASSWORD') || 
                                      upperResponse.includes('URGENT') || 
                                      upperResponse.includes('CLICK') ||
-                                     upperResponse.includes('BANK ACCOUNT');
+                                     upperResponse.includes('BANK ACCOUNT') ||
+                                     upperResponse.includes('MONEY') ||
+                                     upperResponse.includes('CREDIT CARD');
                                      
-  if (containsGreeting && !containsSuspiciousIndicators && aiResponse.length < 100) {
+  if (containsCommonSafe && !containsSuspiciousIndicators && aiResponse.length < 150) {
     riskLevel = 'safe';
     confidenceLevel = 'high';
-    explanation = "This is a standard greeting message with no suspicious elements.";
+    explanation = "This is a standard chat message with no suspicious elements.";
     return { riskLevel, confidenceLevel, explanation };
   }
   

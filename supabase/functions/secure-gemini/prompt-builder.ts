@@ -21,12 +21,13 @@ export function buildUrlPrompt(url) {
  * Builds a minimal text analysis prompt
  */
 export function buildTextPrompt(text) {
-  return `Analyze if this message is safe or suspicious or a scam: "${text}". 
+  return `Analyze if this message from a WhatsApp or similar chat is safe or suspicious or a scam: "${text}". 
   
   IMPORTANT GUIDELINES:
-  - Standard greetings like "Hello", "Hi", "How are you", and friendly conversation starters are ALWAYS SAFE.
-  - Consider "RESULT: SAFE" for normal friendly conversations without suspicious elements.
-  - Only use "RESULT: SUSPICIOUS" when there are genuine red flags but not enough to confirm a scam.
+  - ALWAYS treat standard chat expressions like "Thanks", "Thank you", "Sure", "OK", "Yes", "No", "Hello", "Hi", "Hey" as COMPLETELY SAFE.
+  - Short replies that are normal in messaging contexts (even single words like "Thanks") are ALWAYS SAFE.
+  - Consider context - these are chat messages, not emails or websites, so brevity is normal and not suspicious.
+  - Only use "RESULT: SUSPICIOUS" when there are genuine red flags (requests for money, personal information, or clicking links).
   - Reserve "RESULT: HIGH SUSPICION" for cases with multiple clear warning signs.
   - Use "RESULT: SCAM" only when you're highly confident of malicious intent.
   

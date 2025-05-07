@@ -14,6 +14,12 @@ import { RiskLevel } from "../types";
 export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
   const upperResponse = aiResponse.toUpperCase();
   
+  // Check for common safe messages first
+  const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT)\b/i;
+  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150) {
+    return 'safe';
+  }
+  
   // Check for HIGH SUSPICION first (more specific than just SUSPICIOUS)
   if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
     return 'suspicious';
@@ -35,6 +41,12 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
  * @returns Der Erklärungstext zur Risikobewertung
  */
 export const extractExplanation = (aiResponse: string): string => {
+  // Check for common safe messages first to give a direct explanation
+  const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT)\b/i;
+  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150) {
+    return "This is a standard chat message with no suspicious elements.";
+  }
+  
   const resultPattern = /RESULT:\s*(SAFE|SUSPICIOUS|HIGH SUSPICION|SCAM)/i;
   const resultMatch = aiResponse.match(resultPattern);
   
@@ -55,6 +67,12 @@ export const extractExplanation = (aiResponse: string): string => {
  */
 export const extractConfidenceLevel = (aiResponse: string): 'high' | 'medium' | 'low' => {
   const upperResponse = aiResponse.toUpperCase();
+  
+  // Check for common safe messages first to give high confidence
+  const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT)\b/i;
+  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150) {
+    return 'high';
+  }
   
   if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
     return 'high';
