@@ -35,7 +35,12 @@ export function processAiResponse(aiResponse) {
      upperResponse.includes('LIMITED-TIME OFFER') ||
      upperResponse.includes('TRANSFER YOUR FUNDS') ||
      upperResponse.includes('PREMIUM RATES') ||
-     upperResponse.includes('VIP PROGRAM'));
+     upperResponse.includes('VIP PROGRAM') ||
+     upperResponse.includes('INVESTMENT OPPORTUNITY') ||
+     upperResponse.includes('HIGH RETURN') ||
+     upperResponse.includes('EXCLUSIVE ACCESS') ||
+     upperResponse.includes('FINANCIAL ADVISOR') && upperResponse.includes('SPECIAL')) ||
+     (upperResponse.includes('QUALIFY') && upperResponse.includes('PROGRAM'));
                                      
   // If it contains financial scam indicators, always mark as scam
   if (containsFinancialScamIndicators) {
@@ -59,7 +64,9 @@ export function processAiResponse(aiResponse) {
       (upperResponse.includes('HTTP://VERIFY') || upperResponse.includes('HTTP://BANK')) ||
       (upperResponse.includes('SOCIAL SECURITY') || upperResponse.includes('SSN')) ||
       (upperResponse.includes('DATE OF BIRTH') && upperResponse.includes('VERIFICATION')) ||
-      (upperResponse.includes('EXPIRES TODAY') || upperResponse.includes('24 HOURS'))) {
+      (upperResponse.includes('EXPIRES TODAY') || upperResponse.includes('24 HOURS')) ||
+      (upperResponse.includes('EXCLUSIVE') && upperResponse.includes('OPPORTUNITY')) ||
+      (upperResponse.includes('GUARANTEED') && upperResponse.includes('RETURN'))) {
     riskLevel = 'scam';
     confidenceLevel = 'high';
     explanation = "This message contains typical scam patterns requesting financial verification, personal information, or creating false urgency.";
@@ -71,7 +78,9 @@ export function processAiResponse(aiResponse) {
       (upperResponse.includes('PROVIDE') && 
        (upperResponse.includes('DETAILS') || 
         upperResponse.includes('INFORMATION') || 
-        upperResponse.includes('NUMBER')))) {
+        upperResponse.includes('NUMBER'))) ||
+      (upperResponse.includes('FINANCIAL') && upperResponse.includes('OPPORTUNITY')) ||
+      (upperResponse.includes('ADVISOR') && upperResponse.includes('HELP'))) {
     riskLevel = 'suspicious';
     confidenceLevel = 'high';
     explanation = "This message appears to be gathering sensitive information which could be part of a multi-stage scam.";
