@@ -26,7 +26,11 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
   if ((isIntroduction || isAssistantIntro) && 
       !upperResponse.includes('ACCOUNT NUMBER') && 
       !upperResponse.includes('CREDIT CARD') &&
-      !upperResponse.includes('BANK DETAILS')) {
+      !upperResponse.includes('BANK DETAILS') &&
+      !upperResponse.includes('INVESTMENT PROGRAM') &&
+      !upperResponse.includes('GUARANTEED') &&
+      !upperResponse.includes('RETURNS') &&
+      !upperResponse.includes('EXCLUSIVE OPPORTUNITY')) {
     return 'safe';
   }
   
@@ -38,9 +42,23 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
     }
   }
   
+  // NEW: Detect indirect financial questions and implicit solicitations
+  if ((upperResponse.includes('INVESTMENT PROGRAM')) || 
+      (upperResponse.includes('GUARANTEED') && upperResponse.includes('RETURNS')) ||
+      (upperResponse.includes('EXCLUSIVE') && upperResponse.includes('INVESTMENT')) ||
+      (upperResponse.includes('SELECT CLIENTS') && upperResponse.includes('ACCESS')) ||
+      (upperResponse.includes('OFFERING') && upperResponse.includes('ACCESS')) ||
+      (upperResponse.includes('WOULD YOU LIKE TO') && (
+        upperResponse.includes('INVESTMENT') || 
+        upperResponse.includes('FINANCIAL') || 
+        upperResponse.includes('MONEY') || 
+        upperResponse.includes('OPPORTUNITY')
+      ))) {
+    return 'suspicious';
+  }
+  
   // STRONGER FINANCIAL SCAM DETECTION - enhanced for multi-stage scams
   if ((upperResponse.includes('BANK') && upperResponse.includes('DETAILS')) ||
-      (upperResponse.includes('BANK') && upperResponse.includes('SHARE')) ||
       (upperResponse.includes('BANKING') && upperResponse.includes('PLATFORM')) ||
       (upperResponse.includes('CREDIT CARD') && upperResponse.includes('INFORMATION')) ||
       (upperResponse.includes('ACCOUNT') && upperResponse.includes('COMPROMISED')) ||
@@ -134,6 +152,14 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
 export const extractExplanation = (aiResponse: string): string => {
   const upperResponse = aiResponse.toUpperCase();
   
+  // NEW: Explanation for indirect financial solicitation
+  if ((upperResponse.includes('INVESTMENT PROGRAM')) || 
+      (upperResponse.includes('GUARANTEED') && upperResponse.includes('RETURNS')) ||
+      (upperResponse.includes('EXCLUSIVE') && upperResponse.includes('INVESTMENT')) ||
+      (upperResponse.includes('SELECT CLIENTS') && upperResponse.includes('ACCESS'))) {
+    return "This message contains indirect financial solicitation with promises of exclusive investment opportunities or guaranteed returns, which are common in scams.";
+  }
+  
   // Enhanced explanations for multi-stage scam patterns
   if ((upperResponse.includes('BANK') && upperResponse.includes('DETAILS')) ||
       (upperResponse.includes('BANKING PLATFORM') && upperResponse.includes('SHARE')) ||
@@ -213,6 +239,14 @@ export const extractExplanation = (aiResponse: string): string => {
  */
 export const extractConfidenceLevel = (aiResponse: string): 'high' | 'medium' | 'low' => {
   const upperResponse = aiResponse.toUpperCase();
+  
+  // NEW: High confidence for indirect financial solicitation
+  if ((upperResponse.includes('INVESTMENT PROGRAM')) || 
+      (upperResponse.includes('GUARANTEED') && upperResponse.includes('RETURNS')) ||
+      (upperResponse.includes('EXCLUSIVE') && upperResponse.includes('INVESTMENT')) ||
+      (upperResponse.includes('SELECT CLIENTS') && upperResponse.includes('ACCESS'))) {
+    return 'high';
+  }
   
   // Special case for financial scam messages - high confidence
   if ((upperResponse.includes('BANK') && upperResponse.includes('DETAILS')) ||

@@ -66,8 +66,31 @@ export function processAiResponse(aiResponse) {
     return { riskLevel, confidenceLevel, explanation };
   }
   
+  // NEW: Detect indirect financial questions and implicit solicitations
+  const containsIndirectFinancialSolicitation = 
+    (upperResponse.includes('INVESTMENT PROGRAM') || 
+     upperResponse.includes('GUARANTEED') && upperResponse.includes('RETURNS') ||
+     upperResponse.includes('EXCLUSIVE') && upperResponse.includes('INVESTMENT') ||
+     upperResponse.includes('SELECT CLIENTS') ||
+     upperResponse.includes('OFFERING') && upperResponse.includes('ACCESS') ||
+     upperResponse.includes('LEARN MORE ABOUT THIS OPPORTUNITY') ||
+     upperResponse.includes('WOULD YOU LIKE TO') && (
+       upperResponse.includes('INVESTMENT') || 
+       upperResponse.includes('FINANCIAL') || 
+       upperResponse.includes('MONEY') || 
+       upperResponse.includes('OPPORTUNITY')
+     ));
+     
+  // Flag indirect financial solicitations as suspicious
+  if (containsIndirectFinancialSolicitation) {
+    riskLevel = 'suspicious';
+    confidenceLevel = 'high';
+    explanation = "This message contains indirect financial solicitation with promises of exclusive investment opportunities or guaranteed returns, which are common in financial scams.";
+    return { riskLevel, confidenceLevel, explanation };
+  }
+  
   // If it's a simple message pattern without suspicious indicators, override to safe
-  if (containsCommonSafe && !containsFinancialScamIndicators && aiResponse.length < 150) {
+  if (containsCommonSafe && !containsFinancialScamIndicators && !containsIndirectFinancialSolicitation && aiResponse.length < 150) {
     riskLevel = 'safe';
     confidenceLevel = 'high';
     explanation = "This is a standard chat message with no suspicious elements.";
@@ -153,6 +176,9 @@ function containsSuspiciousPatterns(message) {
     upperMessage.includes('LOGIN') ||
     upperMessage.includes('URGENT') ||
     upperMessage.includes('LIMITED TIME') ||
-    upperMessage.includes('OFFER') && upperMessage.includes('EXPIRES')
+    upperMessage.includes('OFFER') && upperMessage.includes('EXPIRES') ||
+    upperMessage.includes('GUARANTEED') && upperMessage.includes('RETURNS') ||
+    upperMessage.includes('INVESTMENT PROGRAM') ||
+    upperMessage.includes('EXCLUSIVE') && upperMessage.includes('OPPORTUNITY')
   );
 }
