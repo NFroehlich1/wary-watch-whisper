@@ -90,7 +90,7 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
               }
               
               // If still pending, continue to the next attempt
-              // Every 10 attempts, show a progress toast
+              // Show a progress toast less frequently - only every 10 attempts
               if (attempts % 10 === 0) {
                 toast({
                   title: "AI Analysis In Progress",
@@ -102,6 +102,7 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
               console.error(`Error checking job ${jobId} status (attempt ${attempts}):`, statusError);
               
               // Don't break immediately - try a few more times 
+              // Show error messages less frequently
               if (attempts >= 5 && attempts % 5 === 0) {
                 toast({
                   title: "Connection Issue",

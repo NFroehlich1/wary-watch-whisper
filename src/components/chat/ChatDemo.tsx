@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ const ChatDemo: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Add welcome message on first load
+  // Add welcome message on first load - using useEffect with empty dependency array to run only once
   useEffect(() => {
     if (messages.length === 0) {
       const welcomeMessage: Message = {
@@ -78,65 +78,22 @@ const ChatDemo: React.FC = () => {
       if (geminiOptions.enabled) {
         detectScam(welcomeMessage.text, 'text').then((aiResult) => {
           if (aiResult) {
-            setScamAlerts([{
-              id: welcomeMessage.id,
-              content: welcomeMessage.text,
-              result: aiResult
-            }]);
+            setScamAlerts(prev => [
+              ...prev,
+              {
+                id: welcomeMessage.id,
+                content: welcomeMessage.text,
+                result: aiResult
+              }
+            ]);
           }
         });
       }
     }
-  }, [geminiOptions.enabled]);
+  }, []);  // Empty dependency array ensures this runs only once
 
-  const handleSend = () => {
-    if (inputMessage.trim() && !isGeneratingResponse) {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        sender: 'me',
-        text: inputMessage,
-        timestamp: new Date()
-      };
-      
-      setMessages(prevMessages => [...prevMessages, newMessage]);
-      setInputMessage('');
-      
-      // Update user context based on this message
-      updateUserContext(inputMessage);
-      
-      // Also update conversation context with the latest user message
-      const lowerInput = inputMessage.toLowerCase();
-      setConversationContext(prev => ({
-        ...prev,
-        messagesCount: prev.messagesCount + 1,
-        lastTopic: getMessageTopic(inputMessage),
-        userResponses: [...prev.userResponses, inputMessage],
-        userSharedInfo: prev.userSharedInfo || containsPersonalInfo(inputMessage),
-        userInterestInMoney: prev.userInterestInMoney || 
-                          lowerInput.includes('money') || 
-                          lowerInput.includes('earn') || 
-                          lowerInput.includes('cash') ||
-                          lowerInput.includes('income'),
-        userInterestInAccount: prev.userInterestInAccount || 
-                             lowerInput.includes('account') || 
-                             lowerInput.includes('login'),
-        userMentionedBank: prev.userMentionedBank || 
-                         lowerInput.includes('bank') ||
-                         lowerInput.includes('savings')
-      }));
-      
-      // Set generating state to true before generating response
-      setIsGeneratingResponse(true);
-      
-      // Generate AI response after a short delay
-      setTimeout(() => {
-        generateBotResponse(inputMessage);
-      }, 700);
-    }
-  };
-  
-  // Update user context based on message content
-  const updateUserContext = (message: string) => {
+  // Memoize the updateUserContext function to prevent unnecessary re-renders
+  const updateUserContext = useCallback((message: string) => {
     const lowerMsg = message.toLowerCase();
     
     // Look for user name if not already captured
@@ -192,7 +149,7 @@ const ChatDemo: React.FC = () => {
         lowerMsg.match(/\d{9,17}/)) { // Account number pattern
       setUserContext(prev => ({ ...prev, sharedAccountInfo: true }));
     }
-  };
+  }, [userContext.name]);
   
   // Extract topic from user message
   const getMessageTopic = (message: string): string => {
@@ -216,8 +173,8 @@ const ChatDemo: React.FC = () => {
     return personalInfoPatterns.some(pattern => pattern.test(message));
   };
   
-  // Generate the next stage of the scam based on context
-  const generateBotResponse = async (userInput: string) => {
+  // Generate the next stage of the scam based on context - memoize to prevent unnecessary re-renders
+  const generateBotResponse = useCallback(async (userInput: string) => {
     try {
       const lowerInput = userInput.toLowerCase();
       let responseText = '';
@@ -275,18 +232,32 @@ const ChatDemo: React.FC = () => {
       
       setMessages(prevMessages => [...prevMessages, newMessage]);
       
-      // Use AI detection for bot's message
+      // Use AI detection for bot's message - ensure we're not duplicating
       if (geminiOptions.enabled) {
-        const aiResult = await detectScam(responseText, 'text');
-        
-        // Add verification result
-        if (aiResult) {
-          console.log('AI detected risk in bot message:', newMessage.id, aiResult.riskLevel);
-          setScamAlerts(prevAlerts => [...prevAlerts, {
-            id: newMessage.id,
-            content: responseText,
-            result: aiResult
-          }]);
+        try {
+          const aiResult = await detectScam(responseText, 'text');
+          
+          // Add verification result - check for duplicates by id before adding
+          if (aiResult) {
+            console.log('AI detected risk in bot message:', newMessage.id, aiResult.riskLevel);
+            setScamAlerts(prevAlerts => {
+              // Check if this message ID already exists in alerts
+              const existsAlready = prevAlerts.some(alert => alert.id === newMessage.id);
+              if (existsAlready) {
+                return prevAlerts; // Don't add duplicate
+              }
+              return [
+                ...prevAlerts, 
+                {
+                  id: newMessage.id,
+                  content: responseText,
+                  result: aiResult
+                }
+              ];
+            });
+          }
+        } catch (error) {
+          console.error("Error analyzing bot message with AI:", error);
         }
       }
       
@@ -300,6 +271,55 @@ const ChatDemo: React.FC = () => {
     } finally {
       // Always set generating state to false when done
       setIsGeneratingResponse(false);
+    }
+  }, [userContext, geminiOptions.enabled, detectScam]);
+
+  const handleSend = () => {
+    if (inputMessage.trim() && !isGeneratingResponse) {
+      // Create user message
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        sender: 'me',
+        text: inputMessage,
+        timestamp: new Date()
+      };
+      
+      // Prevent duplicate messages by using functional state update
+      setMessages(prevMessages => [...prevMessages, newMessage]);
+      setInputMessage('');
+      
+      // Update user context based on this message
+      updateUserContext(inputMessage);
+      
+      // Also update conversation context with the latest user message
+      const lowerInput = inputMessage.toLowerCase();
+      setConversationContext(prev => ({
+        ...prev,
+        messagesCount: prev.messagesCount + 1,
+        lastTopic: getMessageTopic(inputMessage),
+        userResponses: [...prev.userResponses, inputMessage],
+        userSharedInfo: prev.userSharedInfo || containsPersonalInfo(inputMessage),
+        userInterestInMoney: prev.userInterestInMoney || 
+                          lowerInput.includes('money') || 
+                          lowerInput.includes('earn') || 
+                          lowerInput.includes('cash') ||
+                          lowerInput.includes('income'),
+        userInterestInAccount: prev.userInterestInAccount || 
+                             lowerInput.includes('account') || 
+                             lowerInput.includes('login'),
+        userMentionedBank: prev.userMentionedBank || 
+                         lowerInput.includes('bank') ||
+                         lowerInput.includes('savings')
+      }));
+      
+      // Set generating state to true before generating response
+      setIsGeneratingResponse(true);
+      
+      // Generate AI response after a short delay
+      const userMessageCopy = inputMessage.trim();
+      setTimeout(() => {
+        generateBotResponse(userMessageCopy);
+      }, 700);
     }
   };
 
