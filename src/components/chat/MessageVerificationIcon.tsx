@@ -40,7 +40,7 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="inline-flex mr-2 cursor-pointer text-muted-foreground/70 hover:text-muted-foreground">
+            <span className="inline-flex cursor-pointer text-muted-foreground/70 hover:text-muted-foreground">
               <Shield className="h-4 w-4" />
             </span>
           </TooltipTrigger>
@@ -102,7 +102,7 @@ const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <span 
-              className={`inline-flex mr-2 cursor-pointer hover:opacity-80 p-1 rounded-full ${getIconBackground()}`}
+              className={`inline-flex cursor-pointer hover:opacity-80 p-1 rounded-full ${getIconBackground()}`}
               onClick={handleVerificationClick}
             >
               {getVerificationIcon()}

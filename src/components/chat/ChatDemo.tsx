@@ -225,7 +225,7 @@ const ChatDemo: React.FC = () => {
               <div 
                 className={`max-w-[75%] px-4 py-2 rounded-lg ${getMessageBackground(message.id, message.sender === 'me')}`}
               >
-                <div className="flex items-start">
+                <div className="flex items-center gap-2">
                   {message.sender === 'friend' && (
                     <MessageVerificationIcon 
                       messageId={message.id}
@@ -235,13 +235,11 @@ const ChatDemo: React.FC = () => {
                   )}
                   <div className="whitespace-pre-wrap break-words flex-1">{message.text}</div>
                   {message.sender === 'me' && (
-                    <div className="ml-2">
-                      <MessageVerificationIcon 
-                        messageId={message.id}
-                        messageContent={message.text}
-                        result={getVerificationForMessage(message.id)}
-                      />
-                    </div>
+                    <MessageVerificationIcon 
+                      messageId={message.id}
+                      messageContent={message.text}
+                      result={getVerificationForMessage(message.id)}
+                    />
                   )}
                 </div>
                 <div className={`text-[10px] mt-1 ${
