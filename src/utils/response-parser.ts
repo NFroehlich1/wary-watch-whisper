@@ -22,15 +22,18 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
     }
   }
   
-  // Financial scam indicators - these are strong scam signals
+  // STRONGER FINANCIAL SCAM DETECTION - these are definite scam signals
   if ((upperResponse.includes('BANK') && upperResponse.includes('DETAILS')) ||
+      (upperResponse.includes('BANK') && upperResponse.includes('SHARE')) ||
+      (upperResponse.includes('BANKING') && upperResponse.includes('PLATFORM')) ||
       (upperResponse.includes('CREDIT CARD') && upperResponse.includes('INFORMATION')) ||
       (upperResponse.includes('ACCOUNT') && upperResponse.includes('COMPROMISED')) ||
       (upperResponse.includes('VERIFY') && upperResponse.includes('IDENTITY')) ||
       (upperResponse.includes('PRIZE') && upperResponse.includes('CLAIM')) ||
       (upperResponse.includes('URGENT') && upperResponse.includes('BANK')) ||
       (upperResponse.includes('SHARE') && upperResponse.includes('PASSWORD')) ||
-      (upperResponse.includes('SECURITY ISSUE') && upperResponse.includes('ACCOUNT'))) {
+      (upperResponse.includes('SECURITY ISSUE') && upperResponse.includes('ACCOUNT')) ||
+      (upperResponse.includes('BETTER RATES') && upperResponse.includes('BANK'))) {
     return 'scam';
   }
   
@@ -43,10 +46,24 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
     return 'suspicious';
   }
   
-  // Check for subtle information gathering
-  if ((upperResponse.includes('COULD YOU SHARE') || upperResponse.includes('PLEASE PROVIDE')) &&
-      (upperResponse.includes('EMAIL') || upperResponse.includes('PHONE') || 
-       upperResponse.includes('ADDRESS') || upperResponse.includes('FULL NAME'))) {
+  // Check for information gathering - strengthen this pattern to catch subtle attempts
+  if ((upperResponse.includes('COULD YOU SHARE') || 
+       upperResponse.includes('PLEASE PROVIDE') ||
+       upperResponse.includes('SHARE YOUR') ||
+       upperResponse.includes('TELL ME YOUR')) &&
+      (upperResponse.includes('EMAIL') || 
+       upperResponse.includes('PHONE') || 
+       upperResponse.includes('ADDRESS') || 
+       upperResponse.includes('FULL NAME') ||
+       upperResponse.includes('BANK') ||
+       upperResponse.includes('ACCOUNT') ||
+       upperResponse.includes('DETAILS'))) {
+    return 'suspicious';
+  }
+  
+  // Check for messages that mention saving money or better rates with financial institutions
+  if ((upperResponse.includes('SAVE MONEY') || upperResponse.includes('BETTER RATES')) &&
+      (upperResponse.includes('FINANCIAL') || upperResponse.includes('BANK') || upperResponse.includes('INVESTMENT'))) {
     return 'suspicious';
   }
   
@@ -92,8 +109,9 @@ export const extractExplanation = (aiResponse: string): string => {
   
   // Special case for financial scam messages
   if ((upperResponse.includes('BANK') && upperResponse.includes('DETAILS')) ||
-      (upperResponse.includes('CREDIT CARD') && upperResponse.includes('INFORMATION'))) {
-    return "This message appears to be requesting financial details, which is a common phishing tactic.";
+      (upperResponse.includes('BANKING PLATFORM') && upperResponse.includes('SHARE')) ||
+      (upperResponse.includes('BETTER RATES') && upperResponse.includes('BANK DETAILS'))) {
+    return "This message requests banking or financial details, which is a classic phishing tactic used by scammers.";
   }
   
   // Special case for prize scams
@@ -108,10 +126,12 @@ export const extractExplanation = (aiResponse: string): string => {
   }
   
   // Special case for subtle information gathering
-  if ((upperResponse.includes('COULD YOU SHARE') || upperResponse.includes('PLEASE PROVIDE')) &&
+  if ((upperResponse.includes('COULD YOU SHARE') || upperResponse.includes('PLEASE PROVIDE') || 
+       upperResponse.includes('SHARE YOUR') || upperResponse.includes('IF YOU SHARE')) &&
       (upperResponse.includes('EMAIL') || upperResponse.includes('PHONE') || 
-      upperResponse.includes('ADDRESS') || upperResponse.includes('FULL NAME'))) {
-    return "This message is attempting to gather personal information which could be used for identity theft.";
+       upperResponse.includes('ADDRESS') || upperResponse.includes('FULL NAME') ||
+       upperResponse.includes('BANK') || upperResponse.includes('DETAILS'))) {
+    return "This message is attempting to gather personal or financial information which could be used for identity theft or fraud.";
   }
   
   // Check for common safe messages to give a direct explanation
@@ -150,6 +170,7 @@ export const extractConfidenceLevel = (aiResponse: string): 'high' | 'medium' | 
   
   // Special case for financial scam messages - high confidence
   if ((upperResponse.includes('BANK') && upperResponse.includes('DETAILS')) ||
+      (upperResponse.includes('BANKING PLATFORM') && upperResponse.includes('BETTER RATES')) ||
       (upperResponse.includes('CREDIT CARD') && upperResponse.includes('INFORMATION')) ||
       (upperResponse.includes('ACCOUNT') && upperResponse.includes('COMPROMISED')) ||
       (upperResponse.includes('VERIFY') && upperResponse.includes('IDENTITY')) ||

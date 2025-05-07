@@ -22,17 +22,23 @@ export function processAiResponse(aiResponse) {
   const containsCommonSafe = commonSafeMessages.test(aiResponse);
   
   // Check for suspicious indicators even if common safe words exist
-  const containsSuspiciousIndicators = 
-    (upperResponse.includes('PASSWORD') || 
-    upperResponse.includes('URGENT') || 
-    upperResponse.includes('CLICK') ||
-    upperResponse.includes('BANK ACCOUNT') ||
-    upperResponse.includes('MONEY') ||
-    upperResponse.includes('CREDIT CARD')) && 
-    upperResponse.includes('VERIFY');
+  const containsFinancialScamIndicators = 
+    (upperResponse.includes('BANKING PLATFORM') || 
+     upperResponse.includes('BETTER RATES') || 
+     upperResponse.includes('SHARE') && upperResponse.includes('BANK DETAILS') ||
+     upperResponse.includes('CURRENT BANK') ||
+     upperResponse.includes('SAVE MONEY') && upperResponse.includes('BANK'));
                                      
+  // If it contains financial scam indicators, always mark as scam
+  if (containsFinancialScamIndicators) {
+    riskLevel = 'scam';
+    confidenceLevel = 'high';
+    explanation = "This message appears to be a financial scam attempting to collect banking details under false pretenses.";
+    return { riskLevel, confidenceLevel, explanation };
+  }
+  
   // If it's a simple message pattern without suspicious indicators, override to safe
-  if (containsCommonSafe && !containsSuspiciousIndicators && aiResponse.length < 150) {
+  if (containsCommonSafe && !containsFinancialScamIndicators && aiResponse.length < 150) {
     riskLevel = 'safe';
     confidenceLevel = 'high';
     explanation = "This is a standard chat message with no suspicious elements.";

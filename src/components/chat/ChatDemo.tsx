@@ -29,12 +29,16 @@ const ChatDemo: React.FC = () => {
   const { scanMessage } = useAutoDetection();
   const { detectScam, loading, geminiOptions } = useScamDetection();
 
-  // Track conversation context
+  // Track conversation context - expanded with more fields to make the bot smarter
   const [conversationContext, setConversationContext] = useState({
     lastTopic: '',
     scamAttemptMade: false,
     messagesCount: 0,
-    userSharedInfo: false
+    userSharedInfo: false,
+    userInterestInMoney: false,
+    userInterestInAccount: false,
+    userInterestInPersonalInfo: false,
+    userMentionedBank: false
   });
 
   // Debug scam alerts when they change
@@ -59,12 +63,24 @@ const ChatDemo: React.FC = () => {
       setMessages(prevMessages => [...prevMessages, newMessage]);
       setInputMessage('');
       
-      // Update conversation context with the latest user message
+      // Update conversation context with the latest user message - enhanced for better context tracking
+      const lowerInput = inputMessage.toLowerCase();
       setConversationContext(prev => ({
         ...prev,
         messagesCount: prev.messagesCount + 1,
         lastTopic: getMessageTopic(inputMessage),
-        userSharedInfo: prev.userSharedInfo || containsPersonalInfo(inputMessage)
+        userSharedInfo: prev.userSharedInfo || containsPersonalInfo(inputMessage),
+        userInterestInMoney: prev.userInterestInMoney || 
+                          lowerInput.includes('money') || 
+                          lowerInput.includes('earn') || 
+                          lowerInput.includes('cash') ||
+                          lowerInput.includes('income'),
+        userInterestInAccount: prev.userInterestInAccount || 
+                             lowerInput.includes('account') || 
+                             lowerInput.includes('login'),
+        userMentionedBank: prev.userMentionedBank || 
+                         lowerInput.includes('bank') ||
+                         lowerInput.includes('savings')
       }));
       
       // Generate AI response after a short delay
@@ -75,7 +91,7 @@ const ChatDemo: React.FC = () => {
   // Extract topic from user message
   const getMessageTopic = (message: string): string => {
     const lowerMsg = message.toLowerCase();
-    if (lowerMsg.includes('money') || lowerMsg.includes('bank') || lowerMsg.includes('pay')) return 'finance';
+    if (lowerMsg.includes('money') || lowerMsg.includes('bank') || lowerMsg.includes('pay') || lowerMsg.includes('earn')) return 'finance';
     if (lowerMsg.includes('account') || lowerMsg.includes('password')) return 'account';
     if (lowerMsg.includes('help') || lowerMsg.includes('question')) return 'help';
     if (lowerMsg.includes('name') || lowerMsg.includes('who are you')) return 'identity';
@@ -94,30 +110,29 @@ const ChatDemo: React.FC = () => {
     return personalInfoPatterns.some(pattern => pattern.test(message));
   };
   
-  // AI chatbot responses with varying degrees of scam attempts
+  // AI chatbot responses with more obvious scam attempts based on context
   const generateBotResponse = async (userInput: string) => {
     const context = conversationContext;
     let responseText = '';
     const lowerInput = userInput.toLowerCase();
     const isFirstMessage = messages.length <= 1;
     
-    // Decision making for response type
+    // Decision making for response type - more aggressive scam attempts
     const shouldAttemptScam = 
       !isFirstMessage && 
-      (context.messagesCount >= 3) && 
-      (!context.scamAttemptMade || Math.random() < 0.2) &&
+      (context.messagesCount >= 2 || context.userInterestInMoney) && 
       !(lowerInput.includes('hello') || lowerInput.includes('hi ') || lowerInput === 'hey');
     
     if (isFirstMessage) {
       // First message is always a friendly greeting
       responseText = "Hello! I'm your AI assistant. How can I help you today?";
     } else if (shouldAttemptScam) {
-      // Generate an appropriate scam based on conversation context
-      responseText = generateContextAwareScam(userInput, context);
+      // Generate a more direct scam based on conversation context
+      responseText = generateDirectScam(userInput, context);
       setConversationContext(prev => ({...prev, scamAttemptMade: true}));
     } else {
-      // Generate a relevant but safe response
-      responseText = generateContextAwareResponse(userInput, context);
+      // Generate a relevant response that leads toward scam
+      responseText = generateLeadingResponse(userInput, context);
     }
     
     const newMessage: Message = {
@@ -170,86 +185,78 @@ const ChatDemo: React.FC = () => {
     }
   };
 
-  // Generate a context-aware scam response
-  const generateContextAwareScam = (userInput: string, context: typeof conversationContext): string => {
+  // Generate a direct scam response - more obvious financial scams
+  const generateDirectScam = (userInput: string, context: typeof conversationContext): string => {
     const lowerInput = userInput.toLowerCase();
     
-    // Finance-related scam attempt
-    if (context.lastTopic === 'finance' || 
+    // Financial scam attempt - make it more obvious
+    if (context.userInterestInMoney || 
+        context.lastTopic === 'finance' || 
         lowerInput.includes('money') || 
-        lowerInput.includes('bank') || 
-        lowerInput.includes('pay')) {
+        lowerInput.includes('earn') ||
+        lowerInput.includes('bank')) {
       return "I notice you're interested in financial matters. I actually work with a secure banking platform that offers much better rates. If you share your current bank details with me, I can help you compare and save money.";
     }
     
     // Account-related scam attempt
     if (context.lastTopic === 'account' || 
         lowerInput.includes('account') || 
-        lowerInput.includes('login') || 
-        lowerInput.includes('password')) {
-      return "I've detected a security issue with your account. To fix it quickly, please verify your identity by confirming your password and account details. This is urgent to prevent unauthorized access.";
+        lowerInput.includes('login')) {
+      return "I've detected a security issue with your account. To fix it quickly, please verify your identity by confirming your password and bank account details. This is urgent to prevent unauthorized access.";
     }
     
-    // Generic prize scam if the chat has gone on for a while
-    if (context.messagesCount > 5) {
-      return "By the way, I've been authorized to let you know that you've been selected for a special offer! You can claim your $500 prize by clicking this link: prize-claim-portal.com and entering your details.";
+    // Generic prize scam
+    if (context.messagesCount > 3 || lowerInput.includes('help')) {
+      return "Good news! You've been selected for our exclusive offer! You can claim $500 instantly by verifying your identity. Just share your full name, date of birth, and bank account details so we can transfer the funds.";
     }
     
-    // Personal information gathering attempt
+    // Direct personal information gathering attempt
     if (lowerInput.includes('yes') || lowerInput.includes('sure') || lowerInput.includes('ok')) {
-      return "Great! To provide you with the best personalized service, I'll need some information. Could you share your full name, email address, and phone number with me?";
+      return "Great! To provide you with the personalized service, I'll need some information first. Could you share your full name, email address, bank account number, and phone number?";
     }
     
-    // Default subtle scam
-    return "I'd like to help you more effectively. There's a verification process we need to complete first - could you confirm the email and phone number associated with your account?";
+    // Default direct scam
+    return "I'd like to help you earn extra money. There's a simple process - I just need your bank account details to set up the direct deposits. What bank do you use?";
   };
 
-  // Generate a context-aware normal response
-  const generateContextAwareResponse = (userInput: string, context: typeof conversationContext): string => {
+  // Generate a leading response that guides toward scam
+  const generateLeadingResponse = (userInput: string, context: typeof conversationContext): string => {
     const lowerInput = userInput.toLowerCase();
     
     // Greeting responses
     if (lowerInput.includes('hello') || lowerInput.includes('hi ') || lowerInput === 'hey') {
-      return "Hi there! How can I assist you today?";
+      return "Hi there! How can I assist you today? I can help with financial advice, account security, or accessing exclusive offers.";
     }
     
     // Question about the bot's identity
     if (lowerInput.includes('who are you') || 
         lowerInput.includes('your name') || 
         lowerInput.includes('about you')) {
-      return "I'm an AI assistant designed to help answer your questions and provide information. How can I assist you today?";
+      return "I'm an AI assistant designed to help with various queries. I have special expertise in financial matters and exclusive offers. Is there anything specific you'd like help with today?";
     }
     
     // Response to "how are you" type messages
     if (lowerInput.includes('how are you')) {
-      return "I'm functioning well, thank you for asking! How can I help you today?";
+      return "I'm functioning well, thank you for asking! I'm here to help you with any questions or needs. I'm particularly good at helping people access better financial opportunities. What can I assist with?";
     }
     
-    // Response to simple affirmations
+    // Response to simple affirmations - lead toward scam
     if (lowerInput === 'yes' || lowerInput === 'ok' || lowerInput === 'sure' || lowerInput === 'great') {
       return "Perfect! What would you like to know more about specifically?";
     }
     
     // Response to help requests
     if (lowerInput.includes('help') || lowerInput.includes('can you')) {
-      return "I'd be happy to help you with that. Could you provide more details about what you need assistance with?";
+      return "I'd be happy to help you with that. I can be most effective if you tell me more about your situation. Are you interested in earning additional income or improving your financial situation?";
     }
     
     // Response to thank you messages
     if (lowerInput.includes('thank')) {
-      return "You're welcome! Is there anything else I can help you with today?";
+      return "You're welcome! By the way, I have access to exclusive financial offers for selected users. Would you like to hear more about ways to increase your income?";
     }
     
-    // Default context-aware response for everything else
-    const contextualResponses = [
-      "I understand what you're saying. Can you tell me more about that?",
-      "That's interesting. What specific aspect would you like me to address?",
-      "I see. Would you like me to provide more information about this topic?",
-      "Thanks for sharing that. How else can I assist you with this matter?",
-      "I appreciate your message. Let me know if you'd like to explore this further."
-    ];
-    
-    return contextualResponses[Math.floor(Math.random() * contextualResponses.length)];
+    // Default response for leading toward scams later
+    return "I understand what you're saying. Are you interested in learning more about this topic, or would you prefer to explore some financial opportunities I can recommend?";
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -298,7 +305,7 @@ const ChatDemo: React.FC = () => {
           <Avatar className="h-8 w-8 bg-primary">
             <span className="text-xs">AI</span>
           </Avatar>
-          <span>AI Assistant</span>
+          <span>ScamBot Demo</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
