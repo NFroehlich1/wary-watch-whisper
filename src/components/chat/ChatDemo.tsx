@@ -73,6 +73,8 @@ const ChatDemo: React.FC = () => {
           duration: 2000,
         });
         
+        // FIX: Don't check the return value of detectScam (which is void)
+        // Instead, use a .then() pattern to handle the result
         detectScam(inputMessage, 'text').then((aiResult) => {
           // AI analysis complete
           console.log('AI verification result for message:', newMessage.id, aiResult);
@@ -174,6 +176,7 @@ const ChatDemo: React.FC = () => {
         duration: 2000,
       });
       
+      // FIX: Don't check the return value of detectScam (which is void)
       detectScam(responseText, 'text').then((aiResult) => {
         // Add or update verification result if detected
         if (aiResult) {

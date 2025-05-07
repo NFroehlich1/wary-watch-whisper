@@ -20,7 +20,7 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
   });
 
   // Detect scam content
-  const detectScam = async (content: string | File, type: DetectionType, language?: Language) => {
+  const detectScam = async (content: string | File, type: DetectionType, language?: Language): Promise<ScamResult> => {
     setLoading(true);
     
     try {
@@ -158,6 +158,9 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
         ...prevResults,
         [type]: detectedRisk
       }));
+      
+      setLoading(false);
+      return detectedRisk;
     } catch (error) {
       console.error('Detection error:', error);
       toast({
@@ -165,8 +168,19 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
         description: "An error occurred during analysis",
         variant: "destructive",
       });
-    } finally {
+      
+      // Return a default "safe" result in case of error
+      const safeResult: ScamResult = {
+        riskLevel: 'safe',
+        justification: 'Error occurred during detection, defaulting to safe',
+        detectedLanguage: language || 'en',
+        originalContent: typeof content === 'string' ? content : 'file content',
+        timestamp: new Date().toISOString(),
+        confidenceLevel: 'low'
+      };
+      
       setLoading(false);
+      return safeResult;
     }
   };
 
