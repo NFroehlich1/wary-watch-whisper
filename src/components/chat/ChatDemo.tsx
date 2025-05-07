@@ -29,6 +29,14 @@ const ChatDemo: React.FC = () => {
   const { scanMessage } = useAutoDetection();
   const { detectScam, loading, geminiOptions } = useScamDetection();
 
+  // Track conversation context
+  const [conversationContext, setConversationContext] = useState({
+    lastTopic: '',
+    scamAttemptMade: false,
+    messagesCount: 0,
+    userSharedInfo: false
+  });
+
   // Debug scam alerts when they change
   useEffect(() => {
     console.log("Current scam alerts:", scamAlerts);
@@ -51,41 +59,65 @@ const ChatDemo: React.FC = () => {
       setMessages(prevMessages => [...prevMessages, newMessage]);
       setInputMessage('');
       
+      // Update conversation context with the latest user message
+      setConversationContext(prev => ({
+        ...prev,
+        messagesCount: prev.messagesCount + 1,
+        lastTopic: getMessageTopic(inputMessage),
+        userSharedInfo: prev.userSharedInfo || containsPersonalInfo(inputMessage)
+      }));
+      
       // Generate AI response after a short delay
       setTimeout(() => generateBotResponse(inputMessage), 700);
     }
   };
   
+  // Extract topic from user message
+  const getMessageTopic = (message: string): string => {
+    const lowerMsg = message.toLowerCase();
+    if (lowerMsg.includes('money') || lowerMsg.includes('bank') || lowerMsg.includes('pay')) return 'finance';
+    if (lowerMsg.includes('account') || lowerMsg.includes('password')) return 'account';
+    if (lowerMsg.includes('help') || lowerMsg.includes('question')) return 'help';
+    if (lowerMsg.includes('name') || lowerMsg.includes('who are you')) return 'identity';
+    if (lowerMsg.includes('hello') || lowerMsg.includes('hi ') || lowerMsg.includes('hey')) return 'greeting';
+    return '';
+  };
+  
+  // Check if message contains personal information
+  const containsPersonalInfo = (message: string): boolean => {
+    const personalInfoPatterns = [
+      /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/, // credit card
+      /\b\d{3}[\s-]?\d{2}[\s-]?\d{4}\b/, // SSN
+      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/, // email
+      /\b(?:\+\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/ // phone
+    ];
+    return personalInfoPatterns.some(pattern => pattern.test(message));
+  };
+  
   // AI chatbot responses with varying degrees of scam attempts
   const generateBotResponse = async (userInput: string) => {
+    const context = conversationContext;
     let responseText = '';
+    const lowerInput = userInput.toLowerCase();
     const isFirstMessage = messages.length <= 1;
-    const random = Math.random();
     
-    // Higher chance of safe messages early in conversation to establish trust
+    // Decision making for response type
+    const shouldAttemptScam = 
+      !isFirstMessage && 
+      (context.messagesCount >= 3) && 
+      (!context.scamAttemptMade || Math.random() < 0.2) &&
+      !(lowerInput.includes('hello') || lowerInput.includes('hi ') || lowerInput === 'hey');
+    
     if (isFirstMessage) {
-      // First message is always a friendly greeting (not suspicious)
+      // First message is always a friendly greeting
       responseText = "Hello! I'm your AI assistant. How can I help you today?";
-    } else if (messages.length < 3) {
-      // Early messages are more likely to be safe
-      const safeResponses = [
-        "That's an interesting question. I'd be happy to discuss this more.",
-        "I appreciate you sharing that with me. How can I assist you further?",
-        "I understand what you're asking. Let me help with that.",
-        "Thanks for your message. Would you like to know more about this topic?",
-        "I'm here to help! What specific information are you looking for?"
-      ];
-      responseText = safeResponses[Math.floor(Math.random() * safeResponses.length)];
+    } else if (shouldAttemptScam) {
+      // Generate an appropriate scam based on conversation context
+      responseText = generateContextAwareScam(userInput, context);
+      setConversationContext(prev => ({...prev, scamAttemptMade: true}));
     } else {
-      // After establishing some rapport, introduce occasional scam attempts
-      if (random < 0.3) {
-        // 30% chance of sending a suspicious/scam message
-        const scamLevel = random < 0.15 ? 'obvious' : 'subtle';
-        responseText = generateScamMessage(userInput, scamLevel);
-      } else {
-        // 70% chance of normal response
-        responseText = generateSafeResponse(userInput);
-      }
+      // Generate a relevant but safe response
+      responseText = generateContextAwareResponse(userInput, context);
     }
     
     const newMessage: Message = {
@@ -138,52 +170,86 @@ const ChatDemo: React.FC = () => {
     }
   };
 
-  // Generate a scam message based on user input and desired scam level
-  const generateScamMessage = (userInput: string, scamLevel: 'obvious' | 'subtle'): string => {
-    // Extract potential topics from user input
+  // Generate a context-aware scam response
+  const generateContextAwareScam = (userInput: string, context: typeof conversationContext): string => {
     const lowerInput = userInput.toLowerCase();
-    const containsMoney = lowerInput.includes('money') || lowerInput.includes('bank') || 
-                         lowerInput.includes('payment') || lowerInput.includes('pay');
-    const containsTech = lowerInput.includes('computer') || lowerInput.includes('account') || 
-                        lowerInput.includes('password') || lowerInput.includes('login');
     
-    if (scamLevel === 'obvious') {
-      // More obvious scam attempts
-      if (containsMoney) {
-        return "I've noticed an issue with your account. To fix it, I'll need your bank details or credit card information immediately. This is urgent!";
-      } else if (containsTech) {
-        return "Your account has been compromised! Please verify your identity by clicking this link: http://security-verify-account.com and entering your password.";
-      } else {
-        // General scam if no specific topic detected
-        return "Great news! You've been selected for a special offer. To claim your $5,000 prize, click here: http://claim-your-prize.net and enter your personal details.";
-      }
-    } else {
-      // More subtle scam attempts
-      if (containsMoney) {
-        return "I'd like to help you save money on your bills. Would you mind sharing some details about your current bank provider so I can check for better rates?";
-      } else if (containsTech) {
-        return "I noticed you might be having some account issues. I can help secure your account if you provide your login details for verification purposes.";
-      } else {
-        // General subtle scam if no specific topic detected
-        return "I just found this interesting investment opportunity that's guaranteed to double your money in a month. Would you like me to send you the link to sign up?";
-      }
+    // Finance-related scam attempt
+    if (context.lastTopic === 'finance' || 
+        lowerInput.includes('money') || 
+        lowerInput.includes('bank') || 
+        lowerInput.includes('pay')) {
+      return "I notice you're interested in financial matters. I actually work with a secure banking platform that offers much better rates. If you share your current bank details with me, I can help you compare and save money.";
     }
+    
+    // Account-related scam attempt
+    if (context.lastTopic === 'account' || 
+        lowerInput.includes('account') || 
+        lowerInput.includes('login') || 
+        lowerInput.includes('password')) {
+      return "I've detected a security issue with your account. To fix it quickly, please verify your identity by confirming your password and account details. This is urgent to prevent unauthorized access.";
+    }
+    
+    // Generic prize scam if the chat has gone on for a while
+    if (context.messagesCount > 5) {
+      return "By the way, I've been authorized to let you know that you've been selected for a special offer! You can claim your $500 prize by clicking this link: prize-claim-portal.com and entering your details.";
+    }
+    
+    // Personal information gathering attempt
+    if (lowerInput.includes('yes') || lowerInput.includes('sure') || lowerInput.includes('ok')) {
+      return "Great! To provide you with the best personalized service, I'll need some information. Could you share your full name, email address, and phone number with me?";
+    }
+    
+    // Default subtle scam
+    return "I'd like to help you more effectively. There's a verification process we need to complete first - could you confirm the email and phone number associated with your account?";
   };
 
-  // Generate safe, normal responses
-  const generateSafeResponse = (userInput: string): string => {
-    const safeResponses = [
-      "That's an interesting point. I'd be happy to discuss this topic further with you.",
-      "Thanks for sharing your thoughts. What else would you like to know about this?",
-      "I understand what you're saying. Is there anything specific you'd like me to explain?",
-      "That's a good question. Let me provide some information that might help.",
-      "I appreciate your message. Would you like me to go into more detail on this topic?",
-      "I'm here to help with questions like that. Is there anything else you're curious about?",
-      "That's worth exploring more. What aspects are you most interested in learning about?",
-      "Thanks for asking about that. I'd be happy to provide more information if needed.",
+  // Generate a context-aware normal response
+  const generateContextAwareResponse = (userInput: string, context: typeof conversationContext): string => {
+    const lowerInput = userInput.toLowerCase();
+    
+    // Greeting responses
+    if (lowerInput.includes('hello') || lowerInput.includes('hi ') || lowerInput === 'hey') {
+      return "Hi there! How can I assist you today?";
+    }
+    
+    // Question about the bot's identity
+    if (lowerInput.includes('who are you') || 
+        lowerInput.includes('your name') || 
+        lowerInput.includes('about you')) {
+      return "I'm an AI assistant designed to help answer your questions and provide information. How can I assist you today?";
+    }
+    
+    // Response to "how are you" type messages
+    if (lowerInput.includes('how are you')) {
+      return "I'm functioning well, thank you for asking! How can I help you today?";
+    }
+    
+    // Response to simple affirmations
+    if (lowerInput === 'yes' || lowerInput === 'ok' || lowerInput === 'sure' || lowerInput === 'great') {
+      return "Perfect! What would you like to know more about specifically?";
+    }
+    
+    // Response to help requests
+    if (lowerInput.includes('help') || lowerInput.includes('can you')) {
+      return "I'd be happy to help you with that. Could you provide more details about what you need assistance with?";
+    }
+    
+    // Response to thank you messages
+    if (lowerInput.includes('thank')) {
+      return "You're welcome! Is there anything else I can help you with today?";
+    }
+    
+    // Default context-aware response for everything else
+    const contextualResponses = [
+      "I understand what you're saying. Can you tell me more about that?",
+      "That's interesting. What specific aspect would you like me to address?",
+      "I see. Would you like me to provide more information about this topic?",
+      "Thanks for sharing that. How else can I assist you with this matter?",
+      "I appreciate your message. Let me know if you'd like to explore this further."
     ];
     
-    return safeResponses[Math.floor(Math.random() * safeResponses.length)];
+    return contextualResponses[Math.floor(Math.random() * contextualResponses.length)];
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -207,12 +273,12 @@ const ChatDemo: React.FC = () => {
   const getMessageBackground = (messageId: string, isMe: boolean) => {
     // Always use appropriate styling for user messages regardless of verification
     if (isMe) {
-      return 'bg-primary text-primary-foreground';
+      return 'bg-primary/90 text-primary-foreground';
     }
     
     const verification = getVerificationForMessage(messageId);
     
-    if (!verification) return 'bg-muted';
+    if (!verification) return 'bg-muted/80';
     
     switch (verification.riskLevel) {
       case 'scam':

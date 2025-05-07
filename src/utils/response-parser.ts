@@ -14,32 +14,51 @@ import { RiskLevel } from "../types";
 export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
   const upperResponse = aiResponse.toUpperCase();
   
+  // Check for common absolutely safe chat messages first - very specific patterns
+  if (aiResponse.length < 150) {
+    const simpleGreetings = /^(THANKS|THANK YOU|HELLO|HI|HEY|OK|YES|NO|SURE|COOL|GREAT|FINE)$/i;
+    if (simpleGreetings.test(aiResponse.trim())) {
+      return 'safe';
+    }
+  }
+  
   // Financial scam indicators - these are strong scam signals
   if ((upperResponse.includes('BANK') && upperResponse.includes('DETAILS')) ||
       (upperResponse.includes('CREDIT CARD') && upperResponse.includes('INFORMATION')) ||
       (upperResponse.includes('ACCOUNT') && upperResponse.includes('COMPROMISED')) ||
       (upperResponse.includes('VERIFY') && upperResponse.includes('IDENTITY')) ||
       (upperResponse.includes('PRIZE') && upperResponse.includes('CLAIM')) ||
-      (upperResponse.includes('URGENT') && upperResponse.includes('BANK'))) {
+      (upperResponse.includes('URGENT') && upperResponse.includes('BANK')) ||
+      (upperResponse.includes('SHARE') && upperResponse.includes('PASSWORD')) ||
+      (upperResponse.includes('SECURITY ISSUE') && upperResponse.includes('ACCOUNT'))) {
     return 'scam';
   }
   
-  // Check for common safe chat messages first
+  // Look for suspicious URLs
+  if (upperResponse.includes('HTTP://') || 
+      (upperResponse.includes('HTTPS://') && upperResponse.includes('CLICK')) || 
+      (upperResponse.includes('WWW.') && upperResponse.includes('ENTER')) || 
+      upperResponse.includes('.COM/VERIFY') || 
+      upperResponse.includes('.NET/LOGIN')) {
+    return 'suspicious';
+  }
+  
+  // Check for subtle information gathering
+  if ((upperResponse.includes('COULD YOU SHARE') || upperResponse.includes('PLEASE PROVIDE')) &&
+      (upperResponse.includes('EMAIL') || upperResponse.includes('PHONE') || 
+       upperResponse.includes('ADDRESS') || upperResponse.includes('FULL NAME'))) {
+    return 'suspicious';
+  }
+  
+  // Check for common safe chat patterns - these take precedence over suspicious indicators
   const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT)\b/i;
-  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150 && 
+  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 200 && 
       !upperResponse.includes('PASSWORD') && !upperResponse.includes('URGENT') && 
       !upperResponse.includes('BANK') && !upperResponse.includes('VERIFY')) {
     return 'safe';
   }
   
-  // Look for suspicious URLs
-  if (upperResponse.includes('HTTP://') || upperResponse.includes('HTTPS://') || 
-      upperResponse.includes('WWW.') || upperResponse.includes('.COM') || 
-      upperResponse.includes('.NET')) {
-    return 'suspicious';
-  }
-  
-  // Check for HIGH SUSPICION first (more specific than just SUSPICIOUS)
+  // Check for explicit classification markers
   if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
     return 'suspicious';
   } else if (upperResponse.includes('RESULT: SCAM')) {
@@ -50,8 +69,17 @@ export const extractRiskAssessment = (aiResponse: string): RiskLevel => {
     return 'safe';
   }
   
-  // Default to safe for ambiguous cases
-  return 'safe';
+  // Default to safe for general conversational messages
+  if (aiResponse.length < 180 && 
+      !upperResponse.includes('MONEY') && 
+      !upperResponse.includes('BANK') && 
+      !upperResponse.includes('CLICK') &&
+      !upperResponse.includes('VERIFY')) {
+    return 'safe';
+  }
+  
+  // Default to suspicious for ambiguous cases
+  return 'suspicious';
 };
 
 /**
@@ -79,9 +107,16 @@ export const extractExplanation = (aiResponse: string): string => {
     return "This message contains fake security alerts designed to trick you into revealing personal information.";
   }
   
+  // Special case for subtle information gathering
+  if ((upperResponse.includes('COULD YOU SHARE') || upperResponse.includes('PLEASE PROVIDE')) &&
+      (upperResponse.includes('EMAIL') || upperResponse.includes('PHONE') || 
+      upperResponse.includes('ADDRESS') || upperResponse.includes('FULL NAME'))) {
+    return "This message is attempting to gather personal information which could be used for identity theft.";
+  }
+  
   // Check for common safe messages to give a direct explanation
   const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT)\b/i;
-  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150 && 
+  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 200 && 
       !upperResponse.includes('PASSWORD') && !upperResponse.includes('URGENT') && 
       !upperResponse.includes('BANK') && !upperResponse.includes('VERIFY')) {
     return "This is a standard chat message with no suspicious elements.";
@@ -94,6 +129,11 @@ export const extractExplanation = (aiResponse: string): string => {
     const resultIndex = aiResponse.indexOf(resultMatch[0]);
     const afterResult = aiResponse.substring(resultIndex + resultMatch[0].length).trim();
     return afterResult;
+  }
+  
+  // Default explanation for ambiguous cases
+  if (upperResponse.length < 180 && !upperResponse.includes('MONEY') && !upperResponse.includes('BANK')) {
+    return "This appears to be a normal conversational message without suspicious elements.";
   }
   
   // Falls kein Klassifikationsmuster gefunden wurde, die gesamte Antwort zurückgeben
@@ -117,6 +157,12 @@ export const extractConfidenceLevel = (aiResponse: string): 'high' | 'medium' | 
     return 'high';
   }
   
+  // Check for simple, obviously safe messages - high confidence
+  const simpleGreetings = /^(THANKS|THANK YOU|HELLO|HI|HEY|OK|YES|NO|SURE|COOL|GREAT|FINE)$/i;
+  if (simpleGreetings.test(aiResponse.trim())) {
+    return 'high';
+  }
+  
   // Check for suspicious URLs - medium confidence
   if (upperResponse.includes('HTTP://') || upperResponse.includes('HTTPS://') || 
       upperResponse.includes('WWW.') || upperResponse.includes('.COM') || 
@@ -126,7 +172,7 @@ export const extractConfidenceLevel = (aiResponse: string): 'high' | 'medium' | 
   
   // Check for common safe messages to give high confidence
   const commonSafeMessages = /\b(THANKS|THANK YOU|HELLO|HI|HEY|GREETING|HOW ARE YOU|OK|YES|NO|SURE|COOL|GREAT)\b/i;
-  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 150 && 
+  if (commonSafeMessages.test(aiResponse) && aiResponse.length < 200 && 
       !upperResponse.includes('PASSWORD') && !upperResponse.includes('URGENT') && 
       !upperResponse.includes('BANK') && !upperResponse.includes('VERIFY')) {
     return 'high';
@@ -134,10 +180,7 @@ export const extractConfidenceLevel = (aiResponse: string): 'high' | 'medium' | 
   
   if (upperResponse.includes('RESULT: HIGH SUSPICION')) {
     return 'high';
-  } else if (
-    upperResponse.includes('RESULT: SCAM') ||
-    upperResponse.includes('RESULT: SAFE')
-  ) {
+  } else if (upperResponse.includes('RESULT: SCAM') || upperResponse.includes('RESULT: SAFE')) {
     return 'high';
   } else if (upperResponse.includes('RESULT: SUSPICIOUS')) {
     return 'medium';
