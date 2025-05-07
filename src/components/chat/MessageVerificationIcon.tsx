@@ -1,0 +1,146 @@
+
+import React, { useState } from 'react';
+import { Shield, ShieldAlert, ShieldX } from 'lucide-react';
+import { RiskLevel } from '@/types';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import StatusBadge from '../results/StatusBadge';
+import AnalysisQuestion from '../results/AnalysisQuestion';
+import { useScamDetection } from '@/context/ScamDetectionContext';
+import { ScamResult } from '@/types';
+
+interface MessageVerificationIconProps {
+  result?: ScamResult;
+  messageId: string;
+  messageContent: string;
+}
+
+const MessageVerificationIcon: React.FC<MessageVerificationIconProps> = ({ 
+  result,
+  messageId,
+  messageContent 
+}) => {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { askAnalysisQuestion } = useScamDetection();
+  
+  // If no result is available, show a neutral shield
+  if (!result) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex mr-2 cursor-pointer text-muted-foreground/70 hover:text-muted-foreground">
+              <Shield className="h-4 w-4" />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Noch keine Verifizierung</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  
+  // Determine which icon to show based on risk level
+  const getVerificationIcon = () => {
+    switch (result.riskLevel) {
+      case 'scam':
+        return <ShieldX className="h-4 w-4 text-destructive" />;
+      case 'suspicious':
+        return <ShieldAlert className="h-4 w-4 text-amber-500" />;
+      case 'safe':
+      default:
+        return <Shield className="h-4 w-4 text-green-500" />;
+    }
+  };
+  
+  // Get tooltip text based on risk level
+  const getTooltipText = () => {
+    switch (result.riskLevel) {
+      case 'scam':
+        return 'Warnung: Scam-Nachricht erkannt';
+      case 'suspicious':
+        return 'Vorsicht: Verdächtige Nachricht';
+      case 'safe':
+      default:
+        return 'Sichere Nachricht';
+    }
+  };
+  
+  // Handle click on verification icon
+  const handleVerificationClick = () => {
+    setDialogOpen(true);
+  };
+  
+  return (
+    <>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span 
+              className="inline-flex mr-2 cursor-pointer hover:opacity-80" 
+              onClick={handleVerificationClick}
+            >
+              {getVerificationIcon()}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{getTooltipText()}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {getVerificationIcon()}
+              <span>Nachrichtenverifizierung</span>
+            </DialogTitle>
+            <DialogDescription>
+              Analyse der Nachricht: "{messageContent.length > 50 ? messageContent.substring(0, 50) + '...' : messageContent}"
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-2">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium">Status:</span>
+              <StatusBadge 
+                riskLevel={result.riskLevel} 
+                confidenceLevel={result.confidenceLevel}
+              />
+            </div>
+            
+            <div className="mt-2 p-3 bg-muted rounded-md text-sm text-muted-foreground">
+              <div className="font-medium mb-1">Begründung:</div>
+              <div className="text-foreground">
+                {result.aiVerification || result.justification}
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <AnalysisQuestion 
+                result={result}
+                askAnalysisQuestion={askAnalysisQuestion}
+                userEmoji={null}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default MessageVerificationIcon;

@@ -10,6 +10,7 @@ import { useAutoDetection } from '@/context/AutoDetectionContext';
 import { useScamDetection } from '@/context/ScamDetectionContext';
 import { ScamResult } from '@/types';
 import { toast } from "@/hooks/use-toast";
+import MessageVerificationIcon from './MessageVerificationIcon';
 
 interface Message {
   id: string;
@@ -161,6 +162,11 @@ const ChatDemo: React.FC = () => {
     setScamAlerts(prevAlerts => prevAlerts.filter(alert => alert.id !== alertId));
   };
 
+  // Helper function to get verification result for a message
+  const getVerificationForMessage = (messageId: string) => {
+    return scamAlerts.find(alert => alert.id === messageId)?.result;
+  };
+
   return (
     <Card className="w-full max-w-lg mx-auto h-[70vh] flex flex-col">
       <CardHeader className="border-b bg-muted/50 py-3">
@@ -198,7 +204,25 @@ const ChatDemo: React.FC = () => {
                     : 'bg-muted'
                 }`}
               >
-                <div className="whitespace-pre-wrap break-words">{message.text}</div>
+                <div className="flex items-start">
+                  {message.sender === 'friend' && (
+                    <MessageVerificationIcon 
+                      messageId={message.id}
+                      messageContent={message.text}
+                      result={getVerificationForMessage(message.id)}
+                    />
+                  )}
+                  <div className="whitespace-pre-wrap break-words flex-1">{message.text}</div>
+                  {message.sender === 'me' && (
+                    <div className="ml-2">
+                      <MessageVerificationIcon 
+                        messageId={message.id}
+                        messageContent={message.text}
+                        result={getVerificationForMessage(message.id)}
+                      />
+                    </div>
+                  )}
+                </div>
                 <div className={`text-[10px] mt-1 ${
                   message.sender === 'me'
                     ? 'text-primary-foreground/70'
