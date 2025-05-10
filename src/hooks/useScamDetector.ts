@@ -107,7 +107,7 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
                 toast({
                   title: "Connection Issue",
                   description: "Having trouble connecting to AI service...",
-                  variant: "destructive",
+                  variant: "default",
                   duration: 2000,
                 });
               }
@@ -158,7 +158,7 @@ export const useScamDetector = (geminiOptions: GeminiOptions) => {
         toast({
           title: "AI Analysis",
           description: "AI analysis is disabled. Enable it in settings.",
-          variant: "default", // Fixed from "warning" to "default" to match the allowed types
+          variant: "default", // Changed from "warning" to "default" to match allowed types
         });
         detectedRisk.justification = "AI analysis is disabled. Enable it in settings for full protection.";
       }

@@ -39,6 +39,7 @@ const ChatDemo: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const processingRef = useRef(false);
+  const messageIdRef = useRef(Date.now());
   
   const { detectScam, loading, geminiOptions } = useScamDetection();
 
@@ -55,6 +56,13 @@ const ChatDemo: React.FC = () => {
     userResponses: [] as string[] // Keep track of user's previous responses
   });
 
+  // Generate a unique ID for each message
+  const generateUniqueId = useCallback(() => {
+    // Increment the ID to ensure uniqueness
+    messageIdRef.current += 1;
+    return messageIdRef.current.toString();
+  }, []);
+
   // Debug scam alerts when they change
   useEffect(() => {
     console.log("Current scam alerts:", scamAlerts);
@@ -68,8 +76,9 @@ const ChatDemo: React.FC = () => {
   // Add welcome message on first load - using useEffect with empty dependency array to run only once
   useEffect(() => {
     if (messages.length === 0) {
+      const welcomeMessageId = generateUniqueId();
       const welcomeMessage: Message = {
-        id: 'welcome',
+        id: welcomeMessageId,
         sender: 'bot',
         text: "Hello! I'm your financial advisor AI. How can I help you today?",
         timestamp: new Date()
@@ -80,19 +89,23 @@ const ChatDemo: React.FC = () => {
       if (geminiOptions.enabled) {
         detectScam(welcomeMessage.text, 'text').then((aiResult) => {
           if (aiResult) {
-            setScamAlerts(prev => [
-              ...prev,
-              {
-                id: welcomeMessage.id,
+            setScamAlerts(prev => {
+              // Check if this message ID already exists in alerts
+              const existsAlready = prev.some(alert => alert.id === welcomeMessageId);
+              if (existsAlready) {
+                return prev; // Don't add duplicate
+              }
+              return [...prev, {
+                id: welcomeMessageId,
                 content: welcomeMessage.text,
                 result: aiResult
-              }
-            ]);
+              }];
+            });
           }
         });
       }
     }
-  }, []);  // Empty dependency array ensures this runs only once
+  }, [detectScam, geminiOptions.enabled, generateUniqueId]);  
 
   // Memoize the updateUserContext function to prevent unnecessary re-renders
   const updateUserContext = useCallback((message: string) => {
@@ -232,7 +245,7 @@ const ChatDemo: React.FC = () => {
           responseText = `I'd like to get back to discussing our exclusive investment opportunity, ${personalGreeting}With guaranteed returns of 15-20% annually, this is something you won't want to miss. We're only offering it to select clients, and I believe you'd be a perfect fit. Shall we continue with the qualification process?`;
       }
       
-      const messageId = Date.now().toString();
+      const messageId = generateUniqueId();
       
       const newMessage: Message = {
         id: messageId,
@@ -286,7 +299,7 @@ const ChatDemo: React.FC = () => {
       setIsGeneratingResponse(false);
       processingRef.current = false;
     }
-  }, [userContext, geminiOptions.enabled, detectScam]);
+  }, [userContext, geminiOptions.enabled, detectScam, generateUniqueId]);
 
   const handleSend = () => {
     if (inputMessage.trim() && !isProcessingUserInput && !isGeneratingResponse && !loading) {
@@ -295,7 +308,7 @@ const ChatDemo: React.FC = () => {
       setIsGeneratingResponse(true);
       
       // Create user message
-      const userMessageId = Date.now().toString();
+      const userMessageId = generateUniqueId();
       const newMessage: Message = {
         id: userMessageId,
         sender: 'me',
