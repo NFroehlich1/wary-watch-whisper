@@ -100,6 +100,7 @@ const ScamScenarioDialog: React.FC<ScamScenarioDialogProps> = ({ open, onClose }
   const [isGeneratingResponse, setIsGeneratingResponse] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const processingRef = useRef<boolean>(false);
   
   const { detectScam, loading, geminiOptions } = useScamDetection();
 
@@ -108,7 +109,9 @@ const ScamScenarioDialog: React.FC<ScamScenarioDialogProps> = ({ open, onClose }
 
   // Initialize dialog with first message when opened
   useEffect(() => {
-    if (open && messages.length === 0) {
+    if (open && messages.length === 0 && !processingRef.current) {
+      processingRef.current = true;
+      
       const firstMessage = SCENARIO_MESSAGES[0];
       const messageId = generateUniqueId();
       
@@ -133,10 +136,15 @@ const ScamScenarioDialog: React.FC<ScamScenarioDialogProps> = ({ open, onClose }
               result: aiResult
             }]);
           }
+          processingRef.current = false;
+        }).catch(() => {
+          processingRef.current = false;
         });
+      } else {
+        processingRef.current = false;
       }
     }
-  }, [open, detectScam, geminiOptions.enabled]);
+  }, [open, detectScam, geminiOptions.enabled, messages.length]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -150,12 +158,14 @@ const ScamScenarioDialog: React.FC<ScamScenarioDialogProps> = ({ open, onClose }
       setScamAlerts([]);
       setMessageCount(0);
       setCurrentScenario('investment');
+      processingRef.current = false;
     }
   }, [open]);
 
   const handleSend = () => {
-    if (inputMessage.trim() && !isGeneratingResponse && !loading) {
+    if (inputMessage.trim() && !isGeneratingResponse && !loading && !processingRef.current) {
       setIsGeneratingResponse(true);
+      processingRef.current = true;
       
       // Add user message
       const userMessageId = generateUniqueId();
@@ -223,11 +233,15 @@ const ScamScenarioDialog: React.FC<ScamScenarioDialogProps> = ({ open, onClose }
         
         setMessageCount(prev => prev + 1);
         setIsGeneratingResponse(false);
+        processingRef.current = false;
       }, 1000);
     }
   };
   
   const sendBotMessage = (text: string, scenario: string) => {
+    if (processingRef.current) return;
+    
+    processingRef.current = true;
     const botMessageId = generateUniqueId();
     
     const botMessage: Message = {
@@ -238,25 +252,58 @@ const ScamScenarioDialog: React.FC<ScamScenarioDialogProps> = ({ open, onClose }
       scenario: scenario
     };
     
-    setMessages(prev => [...prev, botMessage]);
+    // Check for duplicate messages - don't add if the same text exists in last 3 messages
+    const lastMessages = messages.slice(-3);
+    const isDuplicate = lastMessages.some(m => m.text === text);
     
-    // AI scan the bot message
-    if (geminiOptions.enabled) {
-      detectScam(text, 'text').then((aiResult) => {
-        if (aiResult) {
-          setScamAlerts(prev => {
-            // Prevent duplicate alerts
-            const exists = prev.some(alert => alert.id === botMessageId);
-            if (exists) return prev;
-            
-            return [...prev, {
-              id: botMessageId,
-              content: text,
-              result: aiResult
-            }];
-          });
+    if (!isDuplicate) {
+      setMessages(prev => [...prev, botMessage]);
+      
+      // AI scan the bot message
+      if (geminiOptions.enabled) {
+        detectScam(text, 'text').then((aiResult) => {
+          if (aiResult) {
+            setScamAlerts(prev => {
+              // Prevent duplicate alerts
+              const exists = prev.some(alert => alert.id === botMessageId);
+              if (exists) return prev;
+              
+              return [...prev, {
+                id: botMessageId,
+                content: text,
+                result: aiResult
+              }];
+            });
+          }
+          processingRef.current = false;
+        }).catch(() => {
+          processingRef.current = false;
+        });
+      } else {
+        processingRef.current = false;
+      }
+    } else {
+      // If duplicate, try to get another message
+      const alternateMessages = SCENARIO_MESSAGES.filter(msg => 
+        msg.scenario === scenario && 
+        !lastMessages.some(m => m.text === msg.text)
+      );
+      
+      if (alternateMessages.length > 0) {
+        const randomIndex = Math.floor(Math.random() * alternateMessages.length);
+        sendBotMessage(alternateMessages[randomIndex].text, scenario);
+      } else {
+        // If no alternate messages in this scenario, switch scenarios
+        const newScenario = ['investment', 'banking', 'gift', 'tech', 'romance']
+          .filter(s => s !== scenario)[Math.floor(Math.random() * 4)];
+        
+        const newMessages = SCENARIO_MESSAGES.filter(msg => msg.scenario === newScenario);
+        if (newMessages.length > 0) {
+          sendBotMessage(newMessages[0].text, newScenario);
+          setCurrentScenario(newScenario);
         }
-      });
+      }
+      processingRef.current = false;
     }
   };
 
