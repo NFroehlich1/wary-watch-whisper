@@ -3,12 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { useScamDetection } from '@/context/ScamDetectionContext';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import MessageInput from './dialog/MessageInput';
 import MessagesContainer from './dialog/MessagesContainer';
 import { Message, ScamAlert } from './types/ScamDialogTypes';
-import { SCENARIO_MESSAGES, getNextScenarioMessage, getAlternativeMessage } from './dialog/ScenarioManager';
+import { SCENARIO_MESSAGES, getNextScenarioMessage } from './dialog/ScenarioManager';
 
 interface ScamScenarioDialogProps {
   open: boolean;
@@ -33,34 +32,40 @@ const ScamScenarioDialog: React.FC<ScamScenarioDialogProps> = ({ open, onClose }
     if (open && messages.length === 0 && !processingRef.current) {
       processingRef.current = true;
       
-      const firstMessage = SCENARIO_MESSAGES[0];
-      const messageId = generateUniqueId();
+      // Get the first investment scenario message
+      const firstMessage = SCENARIO_MESSAGES.find(msg => msg.scenario === 'investment');
       
-      const newMessage: Message = {
-        id: messageId,
-        sender: 'bot',
-        text: firstMessage.text,
-        timestamp: new Date(),
-        scenario: firstMessage.scenario
-      };
-      
-      setMessages([newMessage]);
-      setCurrentScenario(firstMessage.scenario);
-      
-      // Auto-scan with AI
-      if (geminiOptions.enabled) {
-        detectScam(newMessage.text, 'text').then((aiResult) => {
-          if (aiResult) {
-            setScamAlerts(prev => [...prev, {
-              id: messageId,
-              content: newMessage.text,
-              result: aiResult
-            }]);
-          }
+      if (firstMessage) {
+        const messageId = generateUniqueId();
+        
+        const newMessage: Message = {
+          id: messageId,
+          sender: 'bot',
+          text: firstMessage.text,
+          timestamp: new Date(),
+          scenario: firstMessage.scenario
+        };
+        
+        setMessages([newMessage]);
+        setCurrentScenario(firstMessage.scenario);
+        
+        // Auto-scan with AI
+        if (geminiOptions.enabled) {
+          detectScam(newMessage.text, 'text').then((aiResult) => {
+            if (aiResult) {
+              setScamAlerts(prev => [...prev, {
+                id: messageId,
+                content: newMessage.text,
+                result: aiResult
+              }]);
+            }
+            processingRef.current = false;
+          }).catch(() => {
+            processingRef.current = false;
+          });
+        } else {
           processingRef.current = false;
-        }).catch(() => {
-          processingRef.current = false;
-        });
+        }
       } else {
         processingRef.current = false;
       }
@@ -78,6 +83,7 @@ const ScamScenarioDialog: React.FC<ScamScenarioDialogProps> = ({ open, onClose }
     }
   }, [open]);
 
+  // Handle user sending a message
   const handleSend = (inputMessage: string) => {
     if (inputMessage.trim() && !isGeneratingResponse && !loading && !processingRef.current) {
       setIsGeneratingResponse(true);
@@ -94,83 +100,49 @@ const ScamScenarioDialog: React.FC<ScamScenarioDialogProps> = ({ open, onClose }
       
       setMessages(prev => [...prev, userMessage]);
       
-      // Get next bot message based on current scenario and message count
+      // Simulate bot response after a short delay
       setTimeout(() => {
-        // Get next scenario message
+        // Get next scenario message based on current scenario and message count
         const nextMessage = getNextScenarioMessage(currentScenario, messageCount, messages);
         
         if (nextMessage) {
-          // If we got a new scenario, update it
+          // Update scenario if we've switched to a new one
           if (nextMessage.scenario !== currentScenario) {
             setCurrentScenario(nextMessage.scenario);
           }
           
-          sendBotMessage(nextMessage.text, nextMessage.scenario);
+          const botMessageId = generateUniqueId();
+          
+          const botMessage: Message = {
+            id: botMessageId,
+            sender: 'bot',
+            text: nextMessage.text,
+            timestamp: new Date(),
+            scenario: nextMessage.scenario
+          };
+          
+          setMessages(prev => [...prev, botMessage]);
+          
+          // AI scan the bot message
+          if (geminiOptions.enabled) {
+            detectScam(nextMessage.text, 'text').then((aiResult) => {
+              if (aiResult) {
+                setScamAlerts(prev => [...prev, {
+                  id: botMessageId,
+                  content: nextMessage.text,
+                  result: aiResult
+                }]);
+              }
+            }).catch((error) => {
+              console.error('Error detecting scam:', error);
+            });
+          }
         }
         
         setMessageCount(prev => prev + 1);
         setIsGeneratingResponse(false);
         processingRef.current = false;
       }, 1000);
-    }
-  };
-  
-  const sendBotMessage = (text: string, scenario: string) => {
-    if (processingRef.current) return;
-    
-    processingRef.current = true;
-    const botMessageId = generateUniqueId();
-    
-    const botMessage: Message = {
-      id: botMessageId,
-      sender: 'bot',
-      text: text,
-      timestamp: new Date(),
-      scenario: scenario
-    };
-    
-    // Check for duplicate messages - don't add if the same text exists in last 3 messages
-    const lastMessages = messages.slice(-3);
-    const isDuplicate = lastMessages.some(m => m.text === text);
-    
-    if (!isDuplicate) {
-      setMessages(prev => [...prev, botMessage]);
-      
-      // AI scan the bot message
-      if (geminiOptions.enabled) {
-        detectScam(text, 'text').then((aiResult) => {
-          if (aiResult) {
-            setScamAlerts(prev => {
-              // Prevent duplicate alerts
-              const exists = prev.some(alert => alert.id === botMessageId);
-              if (exists) return prev;
-              
-              return [...prev, {
-                id: botMessageId,
-                content: text,
-                result: aiResult
-              }];
-            });
-          }
-          processingRef.current = false;
-        }).catch(() => {
-          processingRef.current = false;
-        });
-      } else {
-        processingRef.current = false;
-      }
-    } else {
-      // Get alternative message
-      const alternativeMessage = getAlternativeMessage(scenario, lastMessages);
-      
-      if (alternativeMessage) {
-        if (alternativeMessage.scenario !== scenario) {
-          setCurrentScenario(alternativeMessage.scenario);
-        }
-        sendBotMessage(alternativeMessage.text, alternativeMessage.scenario);
-      } else {
-        processingRef.current = false;
-      }
     }
   };
 

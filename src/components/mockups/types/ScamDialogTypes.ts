@@ -7,6 +7,7 @@ export interface Message {
   text: string;
   timestamp: Date;
   scenario?: string;
+  isNew?: boolean;
 }
 
 export interface ScamAlert {
@@ -19,3 +20,5 @@ export interface ScenarioMessage {
   text: string;
   scenario: string;
 }
+
+export type ScenarioType = 'investment' | 'banking' | 'gift' | 'tech' | 'romance';

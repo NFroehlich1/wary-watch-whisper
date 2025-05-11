@@ -32,9 +32,10 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isDisabled }
         value={inputMessage}
         onChange={(e) => setInputMessage(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Reply to continue the scenario..."
+        placeholder="Type any response to continue the scenario..."
         className="flex-1"
         disabled={isDisabled}
+        autoFocus
       />
       <Button 
         onClick={handleSend} 

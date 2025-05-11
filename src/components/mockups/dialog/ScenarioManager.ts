@@ -65,84 +65,95 @@ export const SCENARIO_MESSAGES: ScenarioMessage[] = [
   }
 ];
 
+/**
+ * Get the next scenario message without repeating recent messages
+ */
 export const getNextScenarioMessage = (
   currentScenario: string, 
   messageCount: number, 
   messages: any[]
-): { text: string; scenario: string } | null => {
+): ScenarioMessage | null => {
   // Find messages matching the current scenario
   const scenarioMessages = SCENARIO_MESSAGES.filter(msg => msg.scenario === currentScenario);
   
-  // Get next message index for this scenario
-  const nextIndex = Math.min(
-    Math.floor(messageCount / 2) + 1, 
+  // Get index for current scenario progression
+  const scenarioIndex = Math.min(
+    messageCount % scenarioMessages.length,
     scenarioMessages.length - 1
   );
   
-  // If we've reached the end of this scenario, get a new one
-  if (nextIndex >= scenarioMessages.length - 1) {
-    const usedScenarios = new Set(messages
-      .filter((m: any) => m.scenario)
-      .map((m: any) => m.scenario));
+  // Check if we've used all messages in this scenario
+  const usedAllScenarioMessages = messageCount >= scenarioMessages.length * 2;
+  
+  // If we've exhausted this scenario, switch to a new one
+  if (usedAllScenarioMessages) {
+    // Get all distinct scenarios we've already used
+    const usedScenarios = new Set(
+      messages
+        .filter((m: any) => m.scenario)
+        .map((m: any) => m.scenario)
+    );
     
+    // Find an unused scenario if possible
     const availableScenarios = ['investment', 'banking', 'gift', 'tech', 'romance']
-      .filter(s => !usedScenarios.has(s));
+      .filter(s => !usedScenarios.has(s) || usedScenarios.size >= 5);
     
-    // If there are available scenarios, switch to a new one
     if (availableScenarios.length > 0) {
-      const newScenario = availableScenarios[0];
+      // Choose first unused scenario or random one if all used
+      const newScenario = usedScenarios.size < 5 
+        ? availableScenarios[0] 
+        : availableScenarios[Math.floor(Math.random() * availableScenarios.length)];
       
-      // Find the first message for the new scenario
-      const newScenarioMessage = SCENARIO_MESSAGES.find(msg => msg.scenario === newScenario);
-      
-      if (newScenarioMessage) {
-        return newScenarioMessage;
-      }
-    } else {
-      // If all scenarios used, pick a random one that's not the current
-      const otherScenarios = ['investment', 'banking', 'gift', 'tech', 'romance']
-        .filter(s => s !== currentScenario);
-      
-      const randomScenario = otherScenarios[Math.floor(Math.random() * otherScenarios.length)];
-      
-      // Find a message for the random scenario
-      const randomMessage = SCENARIO_MESSAGES.find(msg => msg.scenario === randomScenario);
-      
-      if (randomMessage) {
-        return randomMessage;
-      }
+      // Get the first message from the new scenario
+      return SCENARIO_MESSAGES.find(msg => msg.scenario === newScenario) || null;
     }
-  } else {
-    // Continue with next message in current scenario
-    return scenarioMessages[nextIndex];
   }
   
-  return null;
+  // Get the next message in the current scenario and ensure we don't repeat recent messages
+  const lastThreeMessages = messages.slice(-6).map(m => m.text);
+  const candidateMessage = scenarioMessages[scenarioIndex];
+  
+  // Check if this exact message was sent recently
+  if (candidateMessage && !lastThreeMessages.includes(candidateMessage.text)) {
+    return candidateMessage;
+  } else {
+    // Try to find another message in this scenario that wasn't sent recently
+    const alternateMessage = scenarioMessages.find(msg => !lastThreeMessages.includes(msg.text));
+    if (alternateMessage) {
+      return alternateMessage;
+    } else {
+      // Switch scenarios if all messages in this scenario were recently used
+      return getAlternativeScenario(currentScenario, messages);
+    }
+  }
 };
 
-export const getAlternativeMessage = (
-  scenario: string,
-  lastMessages: any[]
-): { text: string; scenario: string } | null => {
-  // If duplicate, try to get another message
-  const alternateMessages = SCENARIO_MESSAGES.filter(msg => 
-    msg.scenario === scenario && 
-    !lastMessages.some(m => m.text === msg.text)
-  );
+/**
+ * Get a message from an alternative scenario when current one has too many repeats
+ */
+export const getAlternativeScenario = (
+  currentScenario: string,
+  messages: any[]
+): ScenarioMessage | null => {
+  const recentTexts = messages.slice(-6).map(m => m.text);
   
-  if (alternateMessages.length > 0) {
-    const randomIndex = Math.floor(Math.random() * alternateMessages.length);
-    return alternateMessages[randomIndex];
-  } else {
-    // If no alternate messages in this scenario, switch scenarios
-    const newScenario = ['investment', 'banking', 'gift', 'tech', 'romance']
-      .filter(s => s !== scenario)[Math.floor(Math.random() * 4)];
-    
-    const newMessages = SCENARIO_MESSAGES.filter(msg => msg.scenario === newScenario);
-    if (newMessages.length > 0) {
-      return { ...newMessages[0], scenario: newScenario };
-    }
+  // Get all scenarios except current
+  const otherScenarios = ['investment', 'banking', 'gift', 'tech', 'romance']
+    .filter(s => s !== currentScenario);
+  
+  // Randomly select a new scenario
+  const newScenario = otherScenarios[Math.floor(Math.random() * otherScenarios.length)];
+  
+  // Get all messages for this new scenario
+  const newScenarioMessages = SCENARIO_MESSAGES.filter(msg => msg.scenario === newScenario);
+  
+  // Find a message that wasn't used recently
+  const unusedMessage = newScenarioMessages.find(msg => !recentTexts.includes(msg.text));
+  
+  if (unusedMessage) {
+    return unusedMessage;
   }
   
-  return null;
+  // If all else fails, return the first message from the new scenario
+  return newScenarioMessages[0] || null;
 };
