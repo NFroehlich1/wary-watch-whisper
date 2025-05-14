@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import MessageInput from './dialog/MessageInput';
 import MessagesContainer from './dialog/MessagesContainer';
 import { Message, ScamAlert } from './types/ScamDialogTypes';
-import { SCENARIO_MESSAGES, getNextScenarioMessage } from './dialog/ScenarioManager';
+import { getFirstScenarioMessage, getNextScenarioMessage } from './dialog/ScenarioManager';
 
 interface ScamScenarioDialogProps {
   open: boolean;
@@ -32,8 +32,8 @@ const ScamScenarioDialog: React.FC<ScamScenarioDialogProps> = ({ open, onClose }
     if (open && messages.length === 0 && !processingRef.current) {
       processingRef.current = true;
       
-      // Get the first investment scenario message
-      const firstMessage = SCENARIO_MESSAGES.find(msg => msg.scenario === 'investment');
+      // Get the first message for the initial scenario
+      const firstMessage = getFirstScenarioMessage();
       
       if (firstMessage) {
         const messageId = generateUniqueId();

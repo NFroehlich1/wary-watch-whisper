@@ -24,6 +24,15 @@ const MessagesContainer: React.FC<MessagesContainerProps> = ({
     return scamAlerts.find(alert => alert.id === messageId)?.result;
   };
 
+  // Check if message is a duplicate of the previous one
+  const isDuplicate = (message: Message, index: number) => {
+    if (index === 0) return false;
+    const previousMessage = messages[index - 1];
+    
+    return message.text === previousMessage.text && 
+           message.sender === previousMessage.sender;
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.length === 0 ? (
@@ -31,17 +40,20 @@ const MessagesContainer: React.FC<MessagesContainerProps> = ({
           Loading scenarios...
         </div>
       ) : (
-        messages.map((message, index) => (
-          <MessageBubble
-            key={`${message.id}-${index}`}
-            id={message.id}
-            text={message.text}
-            timestamp={message.timestamp}
-            sender={message.sender}
-            scenario={message.scenario}
-            verificationResult={getVerificationForMessage(message.id)}
-          />
-        ))
+        messages
+          // Filter out duplicate messages
+          .filter((message, index) => !isDuplicate(message, index))
+          .map((message, index) => (
+            <MessageBubble
+              key={`${message.id}-${index}`}
+              id={message.id}
+              text={message.text}
+              timestamp={message.timestamp}
+              sender={message.sender}
+              scenario={message.scenario}
+              verificationResult={getVerificationForMessage(message.id)}
+            />
+          ))
       )}
       <div ref={messagesEndRef} />
     </div>

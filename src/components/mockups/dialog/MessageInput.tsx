@@ -41,6 +41,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ onSendMessage, isDisabled }
         onClick={handleSend} 
         size="icon" 
         disabled={!inputMessage.trim() || isDisabled}
+        aria-label="Send message"
       >
         {isDisabled ? (
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent" />
