@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Eleven Labs Edge Function</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; padding: 10px; border-radius: 4px; }
+        .success { background: #e8f5e8; color: #2e7d32; padding: 10px; border-radius: 4px; }
+        .info { background: #e3f2fd; color: #1565c0; padding: 10px; border-radius: 4px; }
+        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        input { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; }
+        .output { background: #f5f5f5; padding: 10px; border-radius: 4px; white-space: pre-wrap; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Debug Eleven Labs Edge Function</h1>
+    
+    <div class="section">
+        <h3>Setup</h3>
+        <input type="text" id="supabaseUrl" placeholder="Supabase URL">
+        <input type="text" id="supabaseKey" placeholder="Supabase Anon Key">
+        <button onclick="initSupabase()">Initialize</button>
+        <div id="initResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Test 1: Verify API Key</h3>
+        <button onclick="testVerifyKey()">Test verify-key Action</button>
+        <div id="verifyResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Test 2: Simple TTS</h3>
+        <button onclick="testSimpleTTS()">Test Simple Text-to-Speech</button>
+        <div id="ttsResult"></div>
+    </div>
+
+    <div class="section">
+        <h3>Test 3: Function Status</h3>
+        <button onclick="testFunctionStatus()">Test Function Existence</button>
+        <div id="statusResult"></div>
+    </div>
+
+    <script>
+        let supabase = null;
+
+        function initSupabase() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            
+            if (!url || !key) {
+                document.getElementById('initResult').innerHTML = '<div class="error">Please enter URL and Key!</div>';
+                return;
+            }
+            
+            supabase = window.supabase.createClient(url, key);
+            document.getElementById('initResult').innerHTML = '<div class="success">✅ Supabase initialized</div>';
+        }
+
+        async function testVerifyKey() {
+            const resultDiv = document.getElementById('verifyResult');
+            if (!supabase) {
+                resultDiv.innerHTML = '<div class="error">Initialize Supabase first!</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="info">Testing verify-key...</div>';
+
+            try {
+                const { data, error } = await supabase.functions.invoke('rapid-processor', {
+                    body: { action: 'verify-key' }
+                });
+
+                if (error) {
+                    console.error('Verify Key Error:', error);
+                    
+                    let errorMessage = `Error: ${error.message}`;
+                    
+                    if (error.context) {
+                        try {
+                            const errorData = await error.context.json();
+                            errorMessage += `\nResponse: ${JSON.stringify(errorData, null, 2)}`;
+                        } catch (e) {
+                            try {
+                                const errorText = await error.context.text();
+                                errorMessage += `\nResponse: ${errorText}`;
+                            } catch (e2) {
+                                errorMessage += `\nStatus: ${error.context.status}`;
+                            }
+                        }
+                    }
+                    
+                    resultDiv.innerHTML = `<div class="error">${errorMessage}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="success">✅ Success!</div><div class="output">${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">JS Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testSimpleTTS() {
+            const resultDiv = document.getElementById('ttsResult');
+            if (!supabase) {
+                resultDiv.innerHTML = '<div class="error">Initialize Supabase first!</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="info">Testing text-to-speech...</div>';
+
+            try {
+                const { data, error } = await supabase.functions.invoke('rapid-processor', {
+                    body: { 
+                        action: 'text-to-speech',
+                        data: { 
+                            text: "Hello World",
+                            voiceId: "21m00Tcm4TlvDq8ikWAM"
+                        }
+                    }
+                });
+
+                if (error) {
+                    console.error('TTS Error:', error);
+                    
+                    let errorMessage = `Error: ${error.message}`;
+                    
+                    if (error.context) {
+                        try {
+                            const errorData = await error.context.json();
+                            errorMessage += `\nResponse: ${JSON.stringify(errorData, null, 2)}`;
+                        } catch (e) {
+                            try {
+                                const errorText = await error.context.text();
+                                errorMessage += `\nResponse: ${errorText}`;
+                            } catch (e2) {
+                                errorMessage += `\nStatus: ${error.context.status}`;
+                            }
+                        }
+                    }
+                    
+                    resultDiv.innerHTML = `<div class="error">${errorMessage}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="success">✅ TTS Success!</div><div class="output">${JSON.stringify(data, null, 2).substring(0, 500)}...</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">JS Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testFunctionStatus() {
+            const resultDiv = document.getElementById('statusResult');
+            if (!supabase) {
+                resultDiv.innerHTML = '<div class="error">Initialize Supabase first!</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="info">Testing function existence...</div>';
+
+            try {
+                // Test with invalid action to see if function exists
+                const { data, error } = await supabase.functions.invoke('rapid-processor', {
+                    body: { action: 'ping' }
+                });
+
+                let message = '';
+                if (error) {
+                    if (error.message.includes('Function not found')) {
+                        message = '❌ Function does not exist!';
+                    } else {
+                        message = `✅ Function exists! Error: ${error.message}`;
+                    }
+                } else {
+                    message = '✅ Function exists and responded!';
+                }
+
+                resultDiv.innerHTML = `<div class="info">${message}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">JS Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Edge Function Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .output {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Supabase Edge Function Test</h1>
+        <p>Dieses Script testet die Verbindung zu Supabase und den Edge Functions für Text-to-Speech.</p>
+    </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h3>🔧 Konfiguration</h3>
+            <label>Supabase URL:</label>
+            <input type="text" id="supabaseUrl" placeholder="https://your-project.supabase.co">
+            
+            <label>Supabase Anon Key:</label>
+            <input type="text" id="supabaseKey" placeholder="Dein Supabase Anon Key">
+            
+            <button onclick="initializeSupabase()">Supabase Initialisieren</button>
+            <div id="initStatus"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h3>🔍 Basic Connection Test</h3>
+            <button onclick="testBasicConnection()" id="basicTestBtn">Basic Connection Test</button>
+            <div id="basicTestOutput"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h3>🎵 Edge Function Tests</h3>
+            
+            <h4>Test 1: elevenlabs-tts Function</h4>
+            <button onclick="testEdgeFunction('elevenlabs-tts')" id="elevenLabsBtn">Test elevenlabs-tts</button>
+            <div id="elevenLabsOutput"></div>
+            
+            <h4>Test 2: rapid-processor Function</h4>
+            <button onclick="testEdgeFunction('rapid-processor')" id="rapidProcessorBtn">Test rapid-processor</button>
+            <div id="rapidProcessorOutput"></div>
+            
+            <h4>Test 3: Custom Test Text</h4>
+            <input type="text" id="testText" value="Hallo, das ist ein Test für die Text-zu-Sprache Funktion." placeholder="Test Text eingeben">
+            <button onclick="testCustomText()">Custom Text testen</button>
+            <div id="customTestOutput"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="test-section">
+            <h3>📊 Alle verfügbaren Edge Functions</h3>
+            <button onclick="listAllFunctions()">Alle Functions auflisten</button>
+            <div id="allFunctionsOutput"></div>
+        </div>
+    </div>
+
+    <script>
+        let supabase = null;
+
+        // Automatisch laden wenn URL Parameter vorhanden
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const url = urlParams.get('url');
+            const key = urlParams.get('key');
+            
+            if (url && key) {
+                document.getElementById('supabaseUrl').value = url;
+                document.getElementById('supabaseKey').value = key;
+                initializeSupabase();
+            }
+        });
+
+        function initializeSupabase() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            const statusDiv = document.getElementById('initStatus');
+            
+            if (!url || !key) {
+                statusDiv.innerHTML = '<div class="error">Bitte URL und Key eingeben!</div>';
+                return;
+            }
+            
+            try {
+                supabase = window.supabase.createClient(url, key);
+                statusDiv.innerHTML = '<div class="success">✅ Supabase erfolgreich initialisiert!</div>';
+                
+                // Enable test buttons
+                document.getElementById('basicTestBtn').disabled = false;
+                document.getElementById('elevenLabsBtn').disabled = false;
+                document.getElementById('rapidProcessorBtn').disabled = false;
+            } catch (error) {
+                statusDiv.innerHTML = `<div class="error">❌ Fehler bei der Initialisierung: ${error.message}</div>`;
+            }
+        }
+
+        async function testBasicConnection() {
+            const outputDiv = document.getElementById('basicTestOutput');
+            outputDiv.innerHTML = '<div class="status loading">Testing...</div>';
+            
+            if (!supabase) {
+                outputDiv.innerHTML = '<div class="error">Supabase nicht initialisiert!</div>';
+                return;
+            }
+            
+            try {
+                // Test basic connection
+                const { data, error } = await supabase.from('nonexistent_table').select('*').limit(1);
+                
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        outputDiv.innerHTML = '<div class="success">✅ Verbindung erfolgreich! (Tabelle existiert nicht - das ist normal)</div>';
+                    } else {
+                        outputDiv.innerHTML = `
+                            <div class="info">ℹ️ Verbindung hergestellt, aber:</div>
+                            <div class="output">Error Code: ${error.code}
+Error Message: ${error.message}
+Details: ${JSON.stringify(error.details, null, 2)}</div>
+                        `;
+                    }
+                } else {
+                    outputDiv.innerHTML = '<div class="success">✅ Verbindung erfolgreich!</div>';
+                }
+            } catch (error) {
+                outputDiv.innerHTML = `
+                    <div class="error">❌ Verbindungsfehler:</div>
+                    <div class="output">${error.message}
+Stack: ${error.stack}</div>
+                `;
+            }
+        }
+
+        async function testEdgeFunction(functionName) {
+            const outputId = functionName === 'elevenlabs-tts' ? 'elevenLabsOutput' : 'rapidProcessorOutput';
+            const outputDiv = document.getElementById(outputId);
+            outputDiv.innerHTML = '<div class="status loading">Testing Edge Function...</div>';
+            
+            if (!supabase) {
+                outputDiv.innerHTML = '<div class="error">Supabase nicht initialisiert!</div>';
+                return;
+            }
+            
+            const testText = "Hallo, das ist ein Test.";
+            
+            try {
+                console.log(`🧪 Testing function: ${functionName}`);
+                
+                // Test mit text-to-speech action
+                const { data, error } = await supabase.functions.invoke(functionName, {
+                    body: { 
+                        action: 'text-to-speech',
+                        data: { 
+                            text: testText,
+                            voiceId: "21m00Tcm4TlvDq8ikWAM"
+                        }
+                    }
+                });
+                
+                if (error) {
+                    outputDiv.innerHTML = `
+                        <div class="error">❌ Edge Function Error:</div>
+                        <div class="output">Function: ${functionName}
+Error Message: ${error.message}
+Error Code: ${error.code || 'Unknown'}
+Status: ${error.status || 'Unknown'}
+Details: ${JSON.stringify(error, null, 2)}</div>
+                    `;
+                } else if (data && data.error) {
+                    outputDiv.innerHTML = `
+                        <div class="error">❌ Function returned error:</div>
+                        <div class="output">Function: ${functionName}
+Returned Error: ${data.error}
+Full Response: ${JSON.stringify(data, null, 2)}</div>
+                    `;
+                } else if (data && data.audioBase64) {
+                    outputDiv.innerHTML = `
+                        <div class="success">✅ Edge Function erfolgreich!</div>
+                        <div class="output">Function: ${functionName}
+Audio Length: ${data.audioBase64.length} characters
+MIME Type: ${data.mimeType}
+Text Length: ${data.textLength}
+Response: ${JSON.stringify(data, null, 2).substring(0, 500)}...</div>
+                    `;
+                } else {
+                    outputDiv.innerHTML = `
+                        <div class="info">ℹ️ Unerwartete Antwort:</div>
+                        <div class="output">Function: ${functionName}
+Response: ${JSON.stringify(data, null, 2)}</div>
+                    `;
+                }
+            } catch (error) {
+                outputDiv.innerHTML = `
+                    <div class="error">❌ JavaScript Error:</div>
+                    <div class="output">Function: ${functionName}
+Error: ${error.message}
+Stack: ${error.stack}</div>
+                `;
+            }
+        }
+
+        async function testCustomText() {
+            const outputDiv = document.getElementById('customTestOutput');
+            const testText = document.getElementById('testText').value;
+            
+            if (!testText.trim()) {
+                outputDiv.innerHTML = '<div class="error">Bitte Test-Text eingeben!</div>';
+                return;
+            }
+            
+            outputDiv.innerHTML = '<div class="status loading">Testing Custom Text...</div>';
+            
+            // Test beide Functions
+            const functions = ['elevenlabs-tts', 'rapid-processor'];
+            let results = [];
+            
+            for (const funcName of functions) {
+                try {
+                    const { data, error } = await supabase.functions.invoke(funcName, {
+                        body: { 
+                            action: 'text-to-speech',
+                            data: { 
+                                text: testText,
+                                voiceId: "21m00Tcm4TlvDq8ikWAM"
+                            }
+                        }
+                    });
+                    
+                    results.push({
+                        function: funcName,
+                        success: !error && !data?.error,
+                        data: data,
+                        error: error
+                    });
+                } catch (e) {
+                    results.push({
+                        function: funcName,
+                        success: false,
+                        error: e.message
+                    });
+                }
+            }
+            
+            let output = '<h4>Test Results:</h4>';
+            results.forEach(result => {
+                const status = result.success ? 'success' : 'error';
+                const icon = result.success ? '✅' : '❌';
+                output += `
+                    <div class="${status}">${icon} ${result.function}: ${result.success ? 'SUCCESS' : 'ERROR'}</div>
+                    <div class="output">${JSON.stringify(result, null, 2)}</div>
+                `;
+            });
+            
+            outputDiv.innerHTML = output;
+        }
+
+        async function listAllFunctions() {
+            const outputDiv = document.getElementById('allFunctionsOutput');
+            outputDiv.innerHTML = '<div class="status loading">Listing Functions...</div>';
+            
+            if (!supabase) {
+                outputDiv.innerHTML = '<div class="error">Supabase nicht initialisiert!</div>';
+                return;
+            }
+            
+            const knownFunctions = [
+                'elevenlabs-tts',
+                'rapid-processor', 
+                'gemini-ai',
+                'newsletter-send',
+                'newsletter-send-email',
+                'newsletter-send-confirmation',
+                'newsletter-confirm',
+                'newsletter-unsubscribe',
+                'auto-generate-newsletter',
+                'qa-archive-search'
+            ];
+            
+            let output = '<h4>Testing bekannte Functions:</h4>';
+            
+            for (const funcName of knownFunctions) {
+                try {
+                    const { data, error } = await supabase.functions.invoke(funcName, {
+                        body: { action: 'ping' }
+                    });
+                    
+                    if (error) {
+                        if (error.message.includes('Function not found')) {
+                            output += `<div class="error">❌ ${funcName}: Function not found</div>`;
+                        } else {
+                            output += `<div class="info">ℹ️ ${funcName}: Exists (${error.message})</div>`;
+                        }
+                    } else {
+                        output += `<div class="success">✅ ${funcName}: Active</div>`;
+                    }
+                } catch (e) {
+                    output += `<div class="error">❌ ${funcName}: ${e.message}</div>`;
+                }
+            }
+            
+            outputDiv.innerHTML = output;
+        }
+
+        // Disable buttons initially
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('basicTestBtn').disabled = true;
+            document.getElementById('elevenLabsBtn').disabled = true;
+            document.getElementById('rapidProcessorBtn').disabled = true;
+        });
+    </script>
+</body>
+</html> 
